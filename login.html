@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>LabCode — MITE</title>
+  <link rel="icon" type="image/png" href="MITE_logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root[data-theme="dark"] {
+      --bg: #0a0a0f;
+      --bg2: #11111a;
+      --bg3: #1a1a26;
+      --border: #24243a;
+      --text: #f4f4f8;
+      --text2: #a8a8bc;
+      --text3: #6e6e84;
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.35);
+      --input-bg: #11111a;
+      --card: #11111a;
+      --shadow: rgba(0,0,0,0.6);
+    }
+    :root[data-theme="light"] {
+      --bg: #f6f6f8;
+      --bg2: #ffffff;
+      --bg3: #eeeef2;
+      --border: #e2e2ea;
+      --text: #14141f;
+      --text2: #4a4a5e;
+      --text3: #8a8a9c;
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.18);
+      --input-bg: #ffffff;
+      --card: #ffffff;
+      --shadow: rgba(20,20,30,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.25s, color 0.25s;
+    }
+    .bg-glow {
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 500px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+      filter: blur(40px);
+      z-index: 0;
+    }
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 56px 56px;
+      opacity: 0.25;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 0%, transparent 75%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .theme-toggle {
+      position: fixed; top: 24px; right: 28px; z-index: 10;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 30px;
+      padding: 8px 16px; font-size: 13px; color: var(--text2); cursor: pointer;
+      display: flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      width: 100%;
+      max-width: 1040px;
+      align-items: center;
+      gap: 64px;
+      padding: 0 40px;
+    }
+    .hero { flex: 1.1; }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--accent); background: var(--accent-glow); border: 1px solid rgba(232,119,34,0.4);
+      padding: 6px 14px; border-radius: 30px; margin-bottom: 24px;
+    }
+    .hero-tag .pulse {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(232,119,34,0.7);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(232,119,34,0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(232,119,34,0); }
+      100% { box-shadow: 0 0 0 0 rgba(232,119,34,0); }
+    }
+    .hero h1 {
+      font-size: 52px; font-weight: 800; line-height: 1.08; letter-spacing: -0.02em;
+      color: var(--text); margin-bottom: 8px;
+    }
+    .hero h1 .accent {
+      background: linear-gradient(120deg, #E87722, #f7a85a);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p.lede {
+      font-size: 16px; color: var(--text3); line-height: 1.7; max-width: 420px; margin: 20px 0 32px;
+    }
+    .hero-logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; }
+    .hero-logo-row img { width: 38px; height: 38px; object-fit: contain; }
+    .hero-logo-row .brand { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .hero-logo-row .college { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 460px; }
+    .feature-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: rgba(232,119,34,0.4); transform: translateY(-2px); }
+    .feature-card .ic { font-size: 16px; margin-bottom: 8px; display: block; }
+    .feature-card .label { font-size: 12.5px; color: var(--text2); line-height: 1.5; font-weight: 500; }
+
+    .panel {
+      flex: 0 0 380px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 32px;
+      box-shadow: 0 30px 80px var(--shadow);
+      position: relative;
+    }
+    .panel::before {
+      content: '';
+      position: absolute; top: -1px; left: 10%; right: 10%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.6;
+    }
+    .panel h3 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.01em; }
+    .panel p.sub { font-size: 13px; color: var(--text3); margin-bottom: 24px; }
+    .roles { display: flex; background: var(--bg3); border-radius: 10px; padding: 4px; margin-bottom: 20px; gap: 4px; border: 1px solid var(--border); }
+    .role { flex: 1; text-align: center; padding: 8px; border-radius: 7px; cursor: pointer; font-size: 12.5px; color: var(--text3); transition: all 0.15s; font-weight: 600; }
+    .role.active { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(232,119,34,0.35); }
+    .field { margin-bottom: 16px; }
+    .field label { font-size: 11px; color: var(--text3); display: block; margin-bottom: 7px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+    .field input {
+      width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; font-size: 13.5px; color: var(--text); outline: none;
+      font-family: 'Inter', sans-serif; transition: border 0.15s, box-shadow 0.15s;
+    }
+    .field input::placeholder { color: var(--text3); }
+    .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(232,119,34,0.15); }
+    .btn {
+      width: 100%; background: linear-gradient(135deg, #E87722, #d4691a); border: none; border-radius: 10px;
+      padding: 13px; font-size: 13.5px; color: #fff; cursor: pointer; font-family: 'Inter', sans-serif;
+      font-weight: 700; transition: all 0.15s; margin-top: 6px;
+      box-shadow: 0 8px 24px rgba(232,119,34,0.35);
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(232,119,34,0.45); }
+    .btn:active { transform: translateY(0); }
+    .error {
+      font-size: 12px; color: #ff8a9e; margin-top: 12px; text-align: center; display: none;
+      background: rgba(255,90,120,0.1); border: 1px solid rgba(255,90,120,0.3); border-radius: 8px; padding: 9px;
+    }
+    .college-footer { font-size: 11px; color: var(--text3); text-align: center; margin-top: 22px; letter-spacing: 0.02em; }
+
+    @media (max-width: 1024px) {
+      .shell { display: none; }
+    }
+
+    /* Multi-account violation modal */
+    .violation-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      z-index: 99998; align-items: center; justify-content: center;
+    }
+    .violation-modal {
+      background: #fff; border-radius: 16px; padding: 40px 36px 32px;
+      max-width: 440px; width: 90%; text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+      animation: violationShake 0.5s ease-in-out;
+    }
+    @keyframes violationShake {
+      0%, 100% { transform: translateX(0); }
+      15%, 45%, 75% { transform: translateX(-8px); }
+      30%, 60%, 90% { transform: translateX(8px); }
+    }
+    .violation-icon {
+      width: 64px; height: 64px; border-radius: 50%; background: #fee2e2;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px; font-size: 32px;
+    }
+    .violation-title { font-size: 20px; font-weight: 800; color: #991b1b; margin-bottom: 8px; }
+    .violation-text { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 12px; }
+    .violation-warn {
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+      padding: 12px 16px; font-size: 13px; color: #991b1b; line-height: 1.5; margin-bottom: 20px;
+    }
+    .violation-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #dc2626; color: #fff; border: none; border-radius: 10px;
+      padding: 12px 28px; font-size: 15px; font-weight: 700; cursor: pointer;
+      font-family: 'Inter', sans-serif; box-shadow: 0 6px 18px rgba(220,38,38,0.3);
+      transition: all 0.15s;
+    }
+    .violation-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(220,38,38,0.4); }
+  </style>
+</head>
+<body>
+
+<!-- DEVICE BLOCK -->
+<div id="device-block" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:99999; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:40px;">
+  <div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,#E87722,#d06a1a); display:flex; align-items:center; justify-content:center; font-size:28px;">⚡</div>
+  <div style="font-size:20px; font-weight:700; color:#fff; font-family:'Inter',sans-serif;">Desktop only</div>
+  <div style="font-size:14px; color:#8a8a9a; max-width:320px; line-height:1.6; font-family:'Inter',sans-serif;">LabCode is built for laptop and desktop screens. Please switch to a larger device to continue.</div>
+</div>
+<script>
+  (function() {
+    function checkDevice() {
+      const isSmall = window.innerWidth <= 1024;
+      const block = document.getElementById('device-block');
+      if (block) block.style.display = isSmall ? 'flex' : 'none';
+    }
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+  })();
+</script>
+
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+
+<button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
+
+<!-- MULTI-ACCOUNT VIOLATION MODAL -->
+<div class="violation-overlay" id="violation-overlay">
+  <div class="violation-modal">
+    <div class="violation-icon">🛑</div>
+    <div class="violation-title">Multi-Account Detected</div>
+    <div class="violation-text" id="violation-text">You are already logged in on another device or browser tab.</div>
+    <div class="violation-warn">⚠️ Multiple concurrent logins are not allowed during lab sessions. Please close the other session first, or contact your faculty if you believe this is an error.</div>
+    <button class="violation-btn" type="button" onclick="dismissViolation()">I Understand</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="hero">
+    <div class="hero-logo-row">
+      <img src="MITE_logo.png" alt="MITE Logo" />
+      <div>
+        <div class="brand">LabCode</div>
+        <div class="college">MITE — Mangalore</div>
+      </div>
+    </div>
+    <div class="hero-tag"><span class="pulse"></span>Live at MITE — All Departments</div>
+    <h1>Your digital lab,<br><span class="accent">finally in order.</span></h1>
+    <p class="lede">Write code, run it instantly, and walk out with a verified lab record — no notebooks, no signatures, no guesswork.</p>
+    <div class="feature-grid">
+      <div class="feature-card"><span class="ic">⚡</span><div class="label">Live execution — C, C++, Python, Java, JS</div></div>
+      <div class="feature-card"><span class="ic">🧩</span><div class="label">Frontend editor with live preview</div></div>
+      <div class="feature-card"><span class="ic">📄</span><div class="label">One-click PDF lab record export</div></div>
+      <div class="feature-card"><span class="ic">📊</span><div class="label">Faculty dashboard, live tracking</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Sign in</h3>
+    <p class="sub">Use your college credentials to continue</p>
+    <div class="roles">
+      <div class="role active" id="r-student" onclick="setRole('student')">Student</div>
+      <div class="role" id="r-faculty" onclick="setRole('faculty')">Faculty</div>
+      <div class="role" id="r-admin" onclick="setRole('admin')">Admin</div>
+    </div>
+    <div class="field">
+      <label id="id-label">USN</label>
+      <input id="usn" placeholder="4SI22IS045" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div style="position:relative;">
+        <input id="password" type="password" placeholder="••••••••" style="width: 100%; padding-right: 40px;" />
+        <button type="button" onclick="togglePassword()" id="toggle-pw-btn" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; color:var(--text3); padding:0;">👁</button>
+      </div>
+    </div>
+    <button class="btn" type="button" onclick="doLogin()">Sign in to lab session</button>
+    <div class="error" id="error"></div>
+    <div class="college-footer">Mangalore Institute of Technology & Engineering</div>
+  </div>
+</div>
+
+<script>
+  let role = 'student';
+
+  const savedTheme = localStorage.getItem('labcode_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  document.getElementById('theme-btn').textContent = savedTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('labcode_theme', next);
+    document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+
+  function setRole(r) {
+    role = r;
+    document.getElementById('r-student').classList.toggle('active', r === 'student');
+    document.getElementById('r-faculty').classList.toggle('active', r === 'faculty');
+    document.getElementById('r-admin').classList.toggle('active', r === 'admin');
+    document.getElementById('id-label').textContent = r === 'student' ? 'USN' : r === 'faculty' ? 'Faculty ID' : 'Admin ID';
+    document.getElementById('usn').placeholder = r === 'student' ? '4SI22IS045' : r === 'faculty' ? 'FAC-IS-001' : 'ADMIN-001';
+  }
+
+  function togglePassword() {
+    const p = document.getElementById('password');
+    const btn = document.getElementById('toggle-pw-btn');
+    if (p.type === 'password') {
+      p.type = 'text';
+      btn.textContent = '👁‍🗨';
+    } else {
+      p.type = 'password';
+      btn.textContent = '👁';
+    }
+  }
+
+  async function doLogin() {
+    const usn = document.getElementById('usn').value.trim().toUpperCase();
+    const password = document.getElementById('password').value.trim();
+    const error = document.getElementById('error');
+    error.style.display = 'none';
+
+    if (!usn || !password) {
+      error.textContent = 'Please fill in both fields.';
+      error.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch('https://labcode-backend.onrender.com/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usn, password })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        if (data.role !== role) {
+          error.textContent = `Invalid credentials. Expected ${role}, got ${data.role}.`;
+          error.style.display = 'block';
+          return;
+        }
+        localStorage.setItem('labcode_user', data.usn);
+        localStorage.setItem('labcode_name', data.name);
+        localStorage.setItem('labcode_role', data.role);
+        if (data.login_token) localStorage.setItem('labcode_login_token', data.login_token);
+
+        if (data.role === 'admin' || data.role === 'hod') {
+          window.location.href = 'admin.html';
+        } else if (data.role === 'faculty') {
+          window.location.href = 'faculty-home.html';
+        } else {
+          window.location.href = 'student-home.html';
+        }
+      } else {
+        // Check if this is a multi-account violation
+        if (data.message && (data.message.toLowerCase().includes('already logged in') || data.message.toLowerCase().includes('another device'))) {
+          const violationOverlay = document.getElementById('violation-overlay');
+          const violationText = document.getElementById('violation-text');
+          if (violationText) violationText.textContent = data.message;
+          if (violationOverlay) violationOverlay.style.display = 'flex';
+        } else if (data.message && data.message.toLowerCase().includes('temporarily locked')) {
+          // Login blocked by faculty — also show violation modal
+          const violationOverlay = document.getElementById('violation-overlay');
+          const violationText = document.getElementById('violation-text');
+          const violationTitle = document.querySelector('.violation-title');
+          const violationIcon = document.querySelector('.violation-icon');
+          if (violationTitle) violationTitle.textContent = 'Login Blocked';
+          if (violationIcon) violationIcon.textContent = '🔒';
+          if (violationText) violationText.textContent = data.message;
+          if (violationOverlay) violationOverlay.style.display = 'flex';
+        } else {
+          error.textContent = data.message;
+          error.style.display = 'block';
+        }
+      }
+    } catch (err) {
+      error.textContent = 'Cannot connect to server.';
+      error.style.display = 'block';
+    }
+  }
+
+  function dismissViolation() {
+    const overlay = document.getElementById('violation-overlay');
+    if (overlay) overlay.style.display = 'none';
+    // Reset modal state in case it was modified for 'Login Blocked'
+    const title = document.querySelector('.violation-title');
+    const icon = document.querySelector('.violation-icon');
+    if (title) title.textContent = 'Multi-Account Detected';
+    if (icon) icon.textContent = '🛑';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LabCode — Admin</title>
+  <link rel="icon" type="image/png" href="MITE_logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root, :root[data-theme="dark"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.35);
+      --bg: #0a0a0f;
+      --bg2: #11111a;
+      --bg3: #1a1a26;
+      --border: #24243a;
+      --text: #f4f4f8;
+      --text2: #a8a8bc;
+      --text3: #6e6e84;
+      --text4: #4a4a5e;
+    }
+    :root[data-theme="light"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.18);
+      --bg: #f6f6f8;
+      --bg2: #ffffff;
+      --bg3: #eeeef2;
+      --border: #e2e2ea;
+      --text: #14141f;
+      --text2: #4a4a5e;
+      --text3: #8a8a9c;
+      --text4: #b0b0c0;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; transition: background 0.25s, color 0.25s; position: relative; }
+    .bg-glow {
+      position: fixed; top: -180px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 420px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none; filter: blur(40px); z-index: 0; opacity: 0.45;
+    }
+    h1, h3 { color: var(--text); }
+    p { color: var(--text3); }
+
+    .topbar { position: relative; z-index: 10; height: 56px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .logo .icon { width: 28px; height: 28px; background: linear-gradient(135deg, var(--accent), #d4691a); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 12px rgba(232,119,34,0.3); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .admin-badge { font-size: 11px; background: rgba(203,166,247,0.12); border: 1px solid rgba(203,166,247,0.4); color: #d9b8ff; padding: 5px 13px; border-radius: 20px; font-weight: 600; }
+    .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); padding: 6px 11px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .logout-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); padding: 6px 14px; border-radius: 8px; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.15s; }
+    .logout-btn:hover { border-color: #ff5a78; color: #ff5a78; }
+
+    /* PAGES */
+    .page { display: none; padding: 36px 32px; position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* DEPT GRID */
+    .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .dept-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; cursor: pointer; transition: all 0.2s cubic-bezier(.2,.8,.2,1); position: relative; overflow: hidden; }
+    .dept-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity 0.2s; }
+    .dept-card:hover { border-color: rgba(232,119,34,0.45); transform: translateY(-3px); box-shadow: 0 16px 36px rgba(0,0,0,0.25); }
+    .dept-card:hover::before { opacity: 1; }
+    .dept-card .dept-code { font-size: 26px; font-weight: 800; color: var(--text); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.01em; }
+    .dept-card .dept-name { font-size: 12.5px; color: var(--text3); line-height: 1.5; }
+    .dept-card .dept-stats { font-size: 11px; color: var(--text4); margin-top: 12px; font-weight: 500; }
+    .dept-card .dept-arrow { position: absolute; top: 22px; right: 18px; font-size: 18px; color: var(--accent); }
+    .add-dept-card { background: transparent; border: 1.5px dashed var(--border); border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 100px; }
+    .add-dept-card:hover { border-color: var(--accent); background: rgba(232,119,34,0.05); }
+    .add-dept-card span { font-size: 28px; color: var(--text4); }
+    .add-dept-card p { font-size: 12px; color: var(--text4); }
+
+    /* HOD SECTION */
+    .hod-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+    .section-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.01em; }
+    .section-sub { font-size: 12px; color: var(--text4); margin-bottom: 18px; }
+
+    /* DEPT PAGE */
+    .back-btn { display: flex; align-items: center; gap: 6px; background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: 8px 16px; border-radius: 9px; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif; margin-bottom: 24px; font-weight: 500; transition: all 0.15s; }
+    .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .dept-header { margin-bottom: 28px; }
+    .dept-header h1 { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+    .dept-header p { font-size: 13.5px; color: var(--text3); margin-top: 6px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .big-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 18px; padding: 28px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 170px; position: relative; overflow: hidden; }
+    .big-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity 0.2s; }
+    .big-card:hover { border-color: rgba(232,119,34,0.45); transform: translateY(-3px); box-shadow: 0 16px 36px rgba(0,0,0,0.25); }
+    .big-card:hover::before { opacity: 1; }
+    .big-card .big-icon { font-size: 38px; }
+    .big-card .big-label { font-size: 17px; font-weight: 700; color: var(--text); }
+    .big-card .big-sub { font-size: 12.5px; color: var(--text3); text-align: center; }
+
+    /* YEAR/SECTION PAGE */
+    .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+    .year-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 18px; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .year-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+    .year-card .yr-num { font-size: 30px; font-weight: 800; color: var(--accent); }
+    .year-card .yr-label { font-size: 11px; color: var(--text3); margin-top: 4px; }
+    .section-cards { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .section-pill { background: var(--bg3); border: 1px solid var(--border); border-radius: 9px; padding: 9px 18px; font-size: 12.5px; color: var(--text2); cursor: pointer; transition: all 0.15s; font-weight: 500; }
+    .section-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .section-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(232,119,34,0.35); }
+
+    /* STUDENT MANAGE TABLE */
+    .manage-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .manage-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .action-row { display: flex; gap: 10px; align-items: center; }
+    table { width: 100%; border-collapse: collapse; background: var(--bg2); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+    thead { background: var(--bg); }
+    th { padding: 12px 16px; text-align: left; font-size: 10px; color: var(--text4); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); font-weight: 700; }
+    td { padding: 12px 16px; font-size: 12.5px; color: var(--text2); border-bottom: 1px solid var(--bg); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg3); }
+    .td-usn { color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 600; }
+
+    /* FORM elements */
+    .field { margin-bottom: 14px; }
+    .field label { font-size: 11px; color: var(--text4); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .field input, .field select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 10px 13px; font-size: 13px; color: var(--text); outline: none; font-family: 'Inter', sans-serif; transition: border 0.15s, box-shadow 0.15s; }
+    .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,119,34,0.15); }
+    .btn-primary { background: linear-gradient(135deg, #E87722, #d4691a); border: none; border-radius: 9px; padding: 10px 20px; font-size: 13px; color: #fff; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 700; transition: all 0.15s; box-shadow: 0 6px 18px rgba(232,119,34,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(232,119,34,0.4); }
+    .btn-danger { background: rgba(255,90,120,0.08); border: 1px solid rgba(255,90,120,0.35); color: #ff8aa0; border-radius: 7px; padding: 5px 11px; font-size: 11px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.15s; }
+    .btn-danger:hover { background: rgba(255,90,120,0.15); }
+    .btn-secondary { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); border-radius: 8px; padding: 7px 15px; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.15s; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .msg { font-size: 12px; padding: 10px 13px; border-radius: 8px; margin-top: 12px; display: none; font-weight: 500; }
+    .msg.ok { background: rgba(120,220,150,0.1); border: 1px solid rgba(120,220,150,0.35); color: #7ee2a0; }
+    .msg.err { background: rgba(255,90,120,0.1); border: 1px solid rgba(255,90,120,0.3); color: #ff8aa0; }
+    .empty { text-align: center; padding: 36px; color: var(--text4); font-size: 12.5px; }
+    .csv-area { border: 1.5px dashed var(--border); border-radius: 9px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.15s; }
+    .csv-area:hover { border-color: var(--accent); background: rgba(232,119,34,0.05); }
+    .csv-area p { font-size: 12px; color: var(--text4); margin-top: 6px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .pill-tag { display: inline-flex; font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 700; background: rgba(120,220,150,0.12); color: #7ee2a0; border: 1px solid rgba(120,220,150,0.35); }
+  </style>
+</head>
+<body>
+
+<!-- DEVICE BLOCK -->
+<div id="device-block" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:99999; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:40px;">
+  <div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,#E87722,#d06a1a); display:flex; align-items:center; justify-content:center; font-size:28px;">⚡</div>
+  <div style="font-size:20px; font-weight:700; color:#fff; font-family:'Inter',sans-serif;">Desktop only</div>
+  <div style="font-size:14px; color:#8a8a9a; max-width:320px; line-height:1.6; font-family:'Inter',sans-serif;">LabCode is built for laptop and desktop screens. Please switch to a larger device to continue.</div>
+</div>
+<script>
+  (function() {
+    function checkDevice() {
+      const isSmall = window.innerWidth <= 1024;
+      const block = document.getElementById('device-block');
+      if (block) block.style.display = isSmall ? 'flex' : 'none';
+    }
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+  })();
+</script>
+
+<div class="bg-glow"></div>
+
+
+<div class="topbar">
+  <div class="logo"><img src="MITE_logo.png" alt="MITE" style="height: 28px; object-fit: contain;" /> LabCode Admin</div>
+  <div id="breadcrumb" style="font-size:12px; color:var(--text4);"></div>
+  <div class="topbar-right">
+    <div class="admin-badge">Admin</div>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<div class="page active" id="page-home">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-size:20px; font-weight:700; color:var(--text); margin-bottom:4px;">Admin Dashboard</h1>
+    <p style="font-size:13px; color:var(--text3);">Manage departments, HODs, faculty and students across MITE</p>
+  </div>
+
+  <div class="hod-section">
+    <div class="section-title">HOD Management</div>
+    <div class="section-sub">Set HOD credentials for each department</div>
+    <div id="hod-list" style="display:flex; flex-direction:column; gap:8px;">
+      <div class="empty">Loading HODs...</div>
+    </div>
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid #1e1e2e;">
+      <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:10px;">Add / Update HOD</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Department</label>
+          <select id="hod-dept"></select>
+        </div>
+        <div class="field">
+          <label>HOD Name</label>
+          <input id="hod-name" placeholder="Dr. Ravi Kumar" />
+        </div>
+        <div class="field">
+          <label>HOD ID</label>
+          <input id="hod-id" placeholder="HOD-ISE-001" style="font-family:'JetBrains Mono',monospace;" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="hod-pass" type="password" placeholder="••••••••" />
+        </div>
+      </div>
+      <button class="btn-primary" onclick="addHOD()">Save HOD</button>
+      <div class="msg" id="hod-msg"></div>
+    </div>
+  </div>
+
+  <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:12px;">Departments</div>
+  <div class="dept-grid" id="dept-grid">
+    <div class="empty">Loading...</div>
+  </div>
+
+  <div class="hod-section">
+    <div class="section-title">Add Department</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Department Name</label>
+        <input id="new-dept-name" placeholder="Artificial Intelligence & ML" />
+      </div>
+      <div class="field">
+        <label>Department Code</label>
+        <input id="new-dept-code" placeholder="AIML" style="font-family:'JetBrains Mono',monospace;" />
+      </div>
+    </div>
+    <button class="btn-primary" onclick="addDept()">Add Department</button>
+    <div class="msg" id="dept-msg"></div>
+  </div>
+</div>
+
+<div class="page" id="page-dept">
+  <button class="back-btn" onclick="goHome()" id="back-to-depts">← Back to departments</button>
+  <div class="dept-header">
+    <h1 id="dept-page-title">ISE Department</h1>
+    <p id="dept-page-sub">Information Science & Engineering</p>
+  </div>
+  <div class="two-col">
+    <div class="big-card" onclick="goStudents()">
+      <div class="big-icon">🎓</div>
+      <div class="big-label">Students</div>
+      <div class="big-sub">Manage by year, cycle and section. Import via CSV.</div>
+    </div>
+    <div class="big-card" onclick="goFaculty()">
+      <div class="big-icon">👨‍🏫</div>
+      <div class="big-label">Faculty</div>
+      <div class="big-sub">Add faculty with subjects and section assignments.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-students">
+  <button class="back-btn" onclick="goDept()">← Back to department</button>
+  <div class="dept-header">
+    <h1>Students — <span id="students-dept-name">ISE</span></h1>
+    <p>Select year and section to manage students</p>
+  </div>
+
+  <div style="font-size:11px; color:var(--text4); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">Select Year</div>
+  <div class="year-grid">
+    <div class="year-card" onclick="selectYear(1)">
+      <div class="yr-num">1</div>
+      <div class="yr-label">P-cycle & C-cycle</div>
+    </div>
+    <div class="year-card" onclick="selectYear(2)">
+      <div class="yr-num">2</div>
+      <div class="yr-label">Sections A, B, C</div>
+    </div>
+    <div class="year-card" onclick="selectYear(3)">
+      <div class="yr-num">3</div>
+      <div class="yr-label">Sections A, B</div>
+    </div>
+    <div class="year-card" onclick="selectYear(4)">
+      <div class="yr-num">4</div>
+      <div class="yr-label">Sections A, B</div>
+    </div>
+  </div>
+
+  <div id="section-selector" style="display:none; margin-bottom:20px;">
+    <div style="font-size:11px; color:var(--text4); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">Select Section</div>
+    <div class="section-cards" id="section-cards"></div>
+  </div>
+
+  <div id="student-manage" style="display:none;">
+    <div class="manage-header">
+      <div class="manage-title" id="student-manage-title">Students</div>
+      <div class="action-row">
+        <label class="csv-area" style="padding:6px 14px; display:flex; align-items:center; gap:6px; cursor:pointer; border-radius:6px; min-height:unset;">
+          <input type="file" accept=".csv" id="csv-input" style="display:none;" onchange="importCSV(this)"/>
+          📂 Import CSV
+        </label>
+        <button class="btn-secondary" onclick="showAddStudent()">+ Add student</button>
+      </div>
+    </div>
+
+    <div id="add-student-form" style="display:none; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:14px;">
+      <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:12px;">Add New Student</div>
+      <div class="grid-2">
+        <div class="field"><label>USN</label><input id="s-usn" placeholder="4SI22IS045" style="font-family:'JetBrains Mono',monospace;"/></div>
+        <div class="field"><label>Full Name</label><input id="s-name" placeholder="Anish Kumar"/></div>
+        <div class="field"><label>Password</label><input id="s-pass" placeholder="pass123"/></div>
+        <div class="field"><label>Email (optional)</label><input id="s-email" placeholder="anish@mite.ac.in"/></div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-primary" onclick="addStudent()">Add Student</button>
+        <button class="btn-secondary" onclick="document.getElementById('add-student-form').style.display='none'">Cancel</button>
+      </div>
+      <div class="msg" id="student-msg"></div>
+    </div>
+
+    <div style="font-size:11px; color:var(--text4); margin-bottom:10px;">CSV format: USN, Name, Password (one student per row)</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>USN</th>
+          <th>Name</th>
+          <th>Year</th>
+          <th>Section</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="student-table">
+        <tr><td colspan="5" class="empty">Select a section to view students</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="page" id="page-faculty">
+  <button class="back-btn" onclick="goDept()">← Back to department</button>
+  <div class="dept-header">
+    <h1>Faculty — <span id="faculty-dept-name">ISE</span></h1>
+    <p>Manage faculty accounts and subject assignments</p>
+  </div>
+
+  <div class="hod-section" style="margin-bottom:20px;">
+    <div class="section-title">Manage Subjects</div>
+    <div class="section-sub">Add subjects taught in this department</div>
+    <div class="grid-2">
+      <div class="field"><label>Subject Name</label><input id="sub-name" placeholder="Data Structures"/></div>
+      <div class="field"><label>Subject Code</label><input id="sub-code" placeholder="DS-LAB" style="font-family:'JetBrains Mono',monospace;"/></div>
+      <div class="field">
+        <label>Year</label>
+        <select id="sub-year">
+          <option value="1">1st Year</option>
+          <option value="2">2nd Year</option>
+          <option value="3">3rd Year</option>
+          <option value="4">4th Year</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <select id="sub-lang">
+          <option>C</option>
+          <option>C++</option>
+          <option>Python</option>
+          <option>Java</option>
+          <option>JavaScript</option>
+          <option>Any</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <button class="btn-primary" onclick="addSubject()">+ Add Subject</button>
+      <div id="subjects-list" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; width:100%;"></div>
+    </div>
+    <div class="msg" id="sub-msg"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="hod-section">
+      <div class="section-title">Add Faculty</div>
+      <div class="section-sub">Create faculty account with subject assignment</div>
+      <div class="field"><label>Faculty ID</label><input id="f-id" placeholder="FAC-ISE-002" style="font-family:'JetBrains Mono',monospace;"/></div>
+      <div class="field"><label>Full Name</label><input id="f-name" placeholder="Prof. Sharma"/></div>
+      <div class="field"><label>Password</label><input id="f-pass" type="password" placeholder="••••••••"/></div>
+      <div class="field">
+        <label>Subject</label>
+        <select id="f-subject"></select>
+      </div>
+      <div class="field">
+        <label>Section</label>
+        <select id="f-section"></select>
+      </div>
+      <button class="btn-primary" onclick="addFaculty()">Add Faculty</button>
+      <div class="msg" id="faculty-msg"></div>
+    </div>
+
+    <div class="hod-section">
+      <div class="section-title">Current Faculty</div>
+      <div class="section-sub">All faculty in this department</div>
+      <div id="faculty-list">
+        <div class="empty">Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center;">
+  <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px; width:400px;">
+    <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:16px;" class="section-title">Edit Student</div>
+    <input type="hidden" id="edit-usn" />
+    <div class="field"><label>Full Name</label><input id="edit-name" placeholder="Student name"/></div>
+    <div class="field"><label>New Password</label><input id="edit-pass" placeholder="Leave blank to keep current"/></div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+      <button class="btn-secondary" onclick="closeEdit()">Cancel</button>
+    </div>
+    <div class="msg" id="edit-msg"></div>
+  </div>
+</div>
+
+<!-- EDIT SUBJECT MODAL -->
+<div id="edit-subject-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center;">
+  <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px; width:420px;">
+    <div style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:16px;">Edit Subject</div>
+    <input type="hidden" id="edit-sub-id" />
+    <div class="grid-2">
+      <div class="field"><label>Subject Name</label><input id="edit-sub-name" placeholder="Data Structures"/></div>
+      <div class="field"><label>Subject Code</label><input id="edit-sub-code" placeholder="DS-LAB" style="font-family:'JetBrains Mono',monospace;"/></div>
+      <div class="field">
+        <label>Year</label>
+        <select id="edit-sub-year">
+          <option value="1">1st Year</option>
+          <option value="2">2nd Year</option>
+          <option value="3">3rd Year</option>
+          <option value="4">4th Year</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Language</label>
+        <select id="edit-sub-lang">
+          <option>C</option>
+          <option>C++</option>
+          <option>Python</option>
+          <option>Java</option>
+          <option>JavaScript</option>
+          <option>Frontend</option>
+          <option>Any</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn-primary" onclick="saveSubjectEdit()">Save Changes</button>
+      <button class="btn-secondary" onclick="closeSubjectEdit()">Cancel</button>
+    </div>
+    <div class="msg" id="edit-sub-msg"></div>
+  </div>
+</div>
+
+<script>
+  // Theme
+  function applyTheme() {
+    const theme = localStorage.getItem('labcode_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('labcode_theme', next);
+    applyTheme();
+  }
+  applyTheme();
+
+  const SUPABASE_URL = 'https://brjugcqaznpgvfbcpnxl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyanVnY3Fhem5wZ3ZmYmNwbnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjY3MDksImV4cCI6MjA5NzAwMjcwOX0.PHHcKuR0LLh-6YpEZwNPKcW9d7yL8BO-c9_z3oQYmHU';
+
+  const role = localStorage.getItem('labcode_role');
+  const user = localStorage.getItem('labcode_user');
+  const userName = localStorage.getItem('labcode_name');
+  if (!user || (role !== 'admin' && role !== 'hod')) window.location.href = 'login.html';
+
+  // If HOD, scope to their department only
+  const isHOD = role === 'hod';
+
+  function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+  let currentDept = null;
+  let currentYear = null;
+  let currentSection = null;
+  let allDepts = [];
+  let allSections = [];
+  let allSubjects = [];
+
+  async function dbGet(table, query = '') {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    return res.json();
+  }
+
+  async function dbPost(table, data) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  }
+
+  async function dbDelete(table, query) {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+  }
+
+  function showMsg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'msg ' + type;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function setBreadcrumb(text) {
+    document.getElementById('breadcrumb').textContent = text;
+  }
+
+  // ---- HOME PAGE ----
+  async function loadHome() {
+    allDepts = await dbGet('departments', '?order=code.asc');
+    const students = await dbGet('users', '?role=eq.student');
+    const faculty = await dbGet('users', '?role=eq.faculty');
+
+    // If HOD, find their department and go directly to it
+    if (isHOD) {
+      const hodProfile = await dbGet('users', `?usn=eq.${user}`);
+      if (hodProfile.length && hodProfile[0].dept_id) {
+        const hodDept = allDepts.find(d => d.id === hodProfile[0].dept_id);
+        if (hodDept) {
+          // Update topbar
+          document.querySelector('.topbar .logo').innerHTML = `<div class="icon">⚡</div>LabCode — ${hodDept.code} HOD`;
+          
+          // Hide back button for HOD
+          const backBtn = document.getElementById('back-to-depts');
+          if (backBtn) backBtn.style.display = 'none';
+
+          openDept(hodDept.id);
+          return;
+        }
+      }
+    }
+
+    // Render dept grid for admin
+    const grid = document.getElementById('dept-grid');
+    grid.innerHTML = allDepts.map(d => {
+      const dStudents = students.filter(s => s.dept_id === d.id).length;
+      const dFaculty = faculty.filter(f => f.dept_id === d.id).length;
+      return `
+        <div class="dept-card" onclick="openDept(${d.id})">
+          <div class="dept-arrow">→</div>
+          <button onclick="event.stopPropagation(); deleteDept(${d.id}, '${d.code}')" style="position:absolute; bottom:12px; right:12px; background:transparent; border:1px solid #5a2d2d; color:#f38ba8; border-radius:4px; padding:2px 8px; font-size:10px; cursor:pointer;">Delete</button>
+          <div class="dept-code">${d.code}</div>
+          <div class="dept-name">${d.name}</div>
+          <div class="dept-stats">${dStudents} students · ${dFaculty} faculty</div>
+        </div>`;
+    }).join('') + `
+      <div class="add-dept-card" onclick="document.getElementById('new-dept-name').focus()">
+        <span>+</span>
+        <p>Add department</p>
+      </div>`;
+
+    // HOD dropdown
+    const hodDept = document.getElementById('hod-dept');
+    hodDept.innerHTML = allDepts.map(d => `<option value="${d.id}">${d.code} — ${d.name}</option>`).join('');
+
+    // Load existing HODs
+    const hods = await dbGet('users', '?role=eq.hod&order=name.asc');
+    const hodList = document.getElementById('hod-list');
+    if (!hods.length) {
+      hodList.innerHTML = '<div style="font-size:12px; color:var(--text4);">No HODs added yet.</div>';
+    } else {
+      hodList.innerHTML = hods.map(h => {
+        const dept = allDepts.find(d => d.id === h.dept_id);
+        return `
+          <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg); border-radius:6px; border:1px solid var(--border);">
+            <span style="font-size:12px; font-family:'JetBrains Mono',monospace; color:var(--accent);">${h.usn}</span>
+            <span style="font-size:12px; color:var(--text); flex:1;">${h.name}</span>
+            <span style="font-size:11px; color:var(--text4);">${dept ? dept.code : '—'}</span>
+            <button class="btn-secondary" style="font-size:11px; padding:3px 10px;" onclick="editFaculty('${h.usn}', '${h.name || ''}')">Edit</button>
+            <button class="btn-danger" onclick="deleteUser('${h.usn}')">Remove</button>
+          </div>`;
+      }).join('');
+    }
+
+    // Double-check hiding back button if isHOD fails inside
+    const backBtn = document.getElementById('back-to-depts');
+    if (backBtn && isHOD) backBtn.style.display = 'none';
+  }
+
+  async function addDept() {
+    const name = document.getElementById('new-dept-name').value.trim();
+    const code = document.getElementById('new-dept-code').value.trim().toUpperCase();
+    if (!name || !code) { showMsg('dept-msg', 'Fill in both fields.', 'err'); return; }
+    try {
+      await dbPost('departments', { name, code });
+      showMsg('dept-msg', '✓ Department added.', 'ok');
+      document.getElementById('new-dept-name').value = '';
+      document.getElementById('new-dept-code').value = '';
+      loadHome();
+    } catch (e) { showMsg('dept-msg', 'Error. Code may already exist.', 'err'); }
+  }
+  
+  async function deleteDept(id, code) {
+    if (!confirm('Delete department ' + code + '? This will remove all sections and subjects in it.')) return;
+    try {
+      await dbDelete('departments', '?id=eq.' + id);
+      showMsg('dept-msg', '✓ Department deleted.', 'ok');
+      loadHome(); 
+    } catch (e) { 
+      showMsg('dept-msg', 'Error. Cannot delete department with existing users/sections.', 'err'); 
+    }
+  }
+
+  async function addHOD() {
+    const dept_id = parseInt(document.getElementById('hod-dept').value);
+    const name = document.getElementById('hod-name').value.trim();
+    const usn = document.getElementById('hod-id').value.trim();
+    const password = document.getElementById('hod-pass').value.trim();
+    if (!name || !usn || !password) { showMsg('hod-msg', 'Fill in all fields.', 'err'); return; }
+    try {
+      await dbPost('users', { usn, name, password, role: 'hod', dept_id });
+      showMsg('hod-msg', '✓ HOD saved.', 'ok');
+      document.getElementById('hod-name').value = '';
+      document.getElementById('hod-id').value = '';
+      document.getElementById('hod-pass').value = '';
+      loadHome();
+    } catch (e) { showMsg('hod-msg', 'Error. ID may already exist.', 'err'); }
+  }
+
+  async function deleteUser(usn) {
+    if (!confirm('Delete user ' + usn + '?')) return;
+    await dbDelete('users', '?usn=eq.' + usn);
+    loadHome();
+  }
+
+  // ---- DEPT PAGE ----
+  function openDept(deptId) {
+    currentDept = allDepts.find(d => d.id === deptId);
+    document.getElementById('dept-page-title').textContent = currentDept.code + ' Department';
+    document.getElementById('dept-page-sub').textContent = currentDept.name;
+    setBreadcrumb('Admin → ' + currentDept.code);
+    showPage('page-dept');
+  }
+
+  function goHome() {
+    if (isHOD) {
+      // HOD can't go back to home — they only have their dept
+      return;
+    }
+    setBreadcrumb('');
+    showPage('page-home');
+    loadHome();
+  }
+  function goDept() { showPage('page-dept'); setBreadcrumb('Admin → ' + currentDept.code); }
+
+  // ---- STUDENTS PAGE ----
+  async function goStudents() {
+    document.getElementById('students-dept-name').textContent = currentDept.code;
+    allSections = await dbGet('sections', '?dept_id=eq.' + currentDept.id + '&order=year.asc');
+    document.getElementById('section-selector').style.display = 'none';
+    document.getElementById('student-manage').style.display = 'none';
+    setBreadcrumb('Admin → ' + currentDept.code + ' → Students');
+    showPage('page-students');
+  }
+
+  function selectYear(year) {
+    currentYear = year;
+    const sections = allSections.filter(s => s.year === year);
+    const cards = document.getElementById('section-cards');
+
+    if (year === 1) {
+      const pSections = sections.filter(s => s.cycle === 'P-cycle');
+      const cSections = sections.filter(s => s.cycle === 'C-cycle');
+      cards.innerHTML = `
+        <div style="width:100%; font-size:11px; color:var(--text4); margin-bottom:6px;">P-cycle</div>
+        ${pSections.map(s => `<div class="section-pill" onclick="selectSection(${s.id}, '${s.cycle} — Section ${s.section_name}')">${s.section_name}</div>`).join('')}
+        <div style="width:100%; font-size:11px; color:var(--text4); margin:6px 0;">C-cycle</div>
+        ${cSections.map(s => `<div class="section-pill" onclick="selectSection(${s.id}, '${s.cycle} — Section ${s.section_name}')">${s.section_name}</div>`).join('')}
+        <div class="section-pill" style="border-style:dashed;" onclick="addSection(${year}, 'P-cycle')">+ P-cycle section</div>
+        <div class="section-pill" style="border-style:dashed;" onclick="addSection(${year}, 'C-cycle')">+ C-cycle section</div>`;
+    } else {
+      cards.innerHTML = sections.map(s => `
+        <div class="section-pill" onclick="selectSection(${s.id}, 'Year ${year} — Section ${s.section_name}')">Section ${s.section_name}</div>`).join('') +
+        `<div class="section-pill" style="border-style:dashed;" onclick="addSection(${year}, null)">+ Add section</div>`;
+    }
+
+    document.getElementById('section-selector').style.display = 'block';
+    document.getElementById('student-manage').style.display = 'none';
+  }
+
+  async function addSection(year, cycle) {
+    const name = prompt('Section name (A, B, C...):');
+    if (!name) return;
+    await dbPost('sections', { dept_id: currentDept.id, year, cycle, section_name: name.toUpperCase() });
+    allSections = await dbGet('sections', '?dept_id=eq.' + currentDept.id + '&order=year.asc');
+    selectYear(year);
+  }
+
+  async function selectSection(sectionId, label) {
+    currentSection = allSections.find(s => s.id === sectionId);
+    document.querySelectorAll('.section-pill').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('student-manage-title').textContent = label;
+    document.getElementById('student-manage').style.display = 'block';
+    await loadStudents();
+  }
+
+  async function loadStudents() {
+    const students = await dbGet('users', `?role=eq.student&dept_id=eq.${currentDept.id}&section_id=eq.${currentSection.id}&order=name.asc`);
+    const tbody = document.getElementById('student-table');
+    if (!students.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No students in this section yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = students.map(s => `
+      <tr>
+        <td class="td-usn">${s.usn}</td>
+        <td>${s.name || '—'}</td>
+        <td>${currentYear}</td>
+        <td>${currentSection.section_name}</td>
+        <td style="display:flex; gap:6px;">
+          <button class="btn-secondary" style="font-size:11px; padding:3px 10px;" onclick="editStudent('${s.usn}', '${s.name || ''}', '${s.password || ''}')">Edit</button>
+          <button class="btn-danger" onclick="deleteStudentRow('${s.usn}')">Delete</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function showAddStudent() {
+    document.getElementById('add-student-form').style.display = 'block';
+  }
+
+  async function addStudent() {
+    const usn = document.getElementById('s-usn').value.trim();
+    const name = document.getElementById('s-name').value.trim();
+    const password = document.getElementById('s-pass').value.trim() || 'pass123';
+    if (!usn || !name) { showMsg('student-msg', 'USN and Name are required.', 'err'); return; }
+    try {
+      await dbPost('users', { usn, name, password, role: 'student', dept_id: currentDept.id, section_id: currentSection.id, year: currentYear });
+      showMsg('student-msg', '✓ Student added.', 'ok');
+      document.getElementById('s-usn').value = '';
+      document.getElementById('s-name').value = '';
+      document.getElementById('s-pass').value = '';
+      loadStudents();
+    } catch (e) { showMsg('student-msg', 'Error. USN may already exist.', 'err'); }
+  }
+
+  async function deleteStudentRow(usn) {
+    if (!confirm('Delete student ' + usn + '?')) return;
+    await dbDelete('users', '?usn=eq.' + usn);
+    loadStudents();
+  }
+
+  async function importCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.trim().split('\n').filter(l => l.trim());
+    let added = 0, failed = 0;
+    for (const line of lines) {
+      const parts = line.split(',').map(p => p.trim());
+      const usn = parts[0], name = parts[1], password = parts[2] || 'pass123';
+      if (!usn || !name) { failed++; continue; }
+      try {
+        await dbPost('users', { usn, name, password, role: 'student', dept_id: currentDept.id, section_id: currentSection.id, year: currentYear });
+        added++;
+      } catch { failed++; }
+    }
+    alert(`✓ Imported ${added} students. ${failed > 0 ? failed + ' failed (already exist).' : ''}`);
+    loadStudents();
+    input.value = '';
+  }
+
+  // ---- FACULTY PAGE ----
+  async function goFaculty() {
+    document.getElementById('faculty-dept-name').textContent = currentDept.code;
+    allSubjects = await dbGet('subjects', '?dept_id=eq.' + currentDept.id + '&order=name.asc');
+    allSections = await dbGet('sections', '?dept_id=eq.' + currentDept.id + '&order=year.asc');
+
+    document.getElementById('f-subject').innerHTML = allSubjects.map(s => `<option value="${s.id}">${s.name} (Year ${s.year})</option>`).join('') || '<option>No subjects yet</option>';
+    document.getElementById('f-section').innerHTML = allSections.map(s => `<option value="${s.id}">${s.cycle ? s.cycle + ' - ' : ''}Year ${s.year} Section ${s.section_name}</option>`).join('');
+
+    setBreadcrumb('Admin → ' + currentDept.code + ' → Faculty');
+    showPage('page-faculty');
+    loadFacultyList();
+    loadSubjectsList();
+  }
+
+  let facultyAssignments = {}; // usn -> array of {id, subject_id, section_id, subjects, sections}
+
+  async function loadFacultyList() {
+    const faculty = await dbGet('users', `?role=eq.faculty&dept_id=eq.${currentDept.id}&order=name.asc`);
+    const list = document.getElementById('faculty-list');
+    if (!faculty.length) {
+      list.innerHTML = '<div class="empty">No faculty yet.</div>';
+      return;
+    }
+
+    // Load all assignments for these faculty in one go
+    const usns = faculty.map(f => `"${f.usn}"`).join(',');
+    const assignments = await dbGet('faculty_subjects', `?faculty_usn=in.(${usns})&select=*,subjects(*),sections(*)`);
+    facultyAssignments = {};
+    assignments.forEach(a => {
+      if (!facultyAssignments[a.faculty_usn]) facultyAssignments[a.faculty_usn] = [];
+      facultyAssignments[a.faculty_usn].push(a);
+    });
+
+    list.innerHTML = faculty.map(f => {
+      const myAssignments = facultyAssignments[f.usn] || [];
+      return `
+      <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:600; color:var(--text);">${f.name || '—'}</div>
+            <div style="font-size:11px; color:var(--accent); font-family:'JetBrains Mono',monospace;">${f.usn}</div>
+          </div>
+          <button class="btn-secondary" style="font-size:11px; padding:3px 10px;" onclick="editFaculty('${f.usn}', '${f.name || ''}')">Edit</button>
+          <button class="btn-danger" onclick="deleteFaculty('${f.usn}')">Remove</button>
+        </div>
+        <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">
+          ${myAssignments.length === 0
+            ? '<span style="font-size:11px; color:var(--text4);">No subjects assigned yet</span>'
+            : myAssignments.map(a => `
+              <span style="display:inline-flex; align-items:center; gap:5px; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:4px 9px; font-size:10.5px; color:var(--text2);">
+                ${a.subjects ? a.subjects.code : '—'} · ${a.sections ? (a.sections.cycle ? a.sections.cycle + ' ' : '') + 'Yr' + a.sections.year + ' Sec' + a.sections.section_name : '—'}
+                <span onclick="removeFacultyAssignment(${a.id}, '${f.usn}')" style="cursor:pointer; color:#f38ba8; font-weight:700;">×</span>
+              </span>`).join('')
+          }
+          <button onclick="showAddAssignment('${f.usn}')" style="font-size:10.5px; background:transparent; border:1px dashed var(--border); color:var(--text3); border-radius:6px; padding:4px 9px; cursor:pointer; font-family:'Inter',sans-serif;">+ Add subject</button>
+        </div>
+        <div id="add-assignment-${f.usn}" style="display:none; margin-top:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px;">
+          <div class="grid-2" style="margin-bottom:8px;">
+            <select id="new-assign-subject-${f.usn}" class="field-select" style="font-size:12px;">
+              ${allSubjects.map(s => `<option value="${s.id}">${s.name} (Yr ${s.year})</option>`).join('')}
+            </select>
+            <select id="new-assign-section-${f.usn}" class="field-select" style="font-size:12px;">
+              ${allSections.map(s => `<option value="${s.id}">${s.cycle ? s.cycle + ' - ' : ''}Yr ${s.year} Sec ${s.section_name}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-primary" style="font-size:11px; padding:6px 14px;" onclick="addFacultyAssignment('${f.usn}')">Add</button>
+            <button class="btn-secondary" style="font-size:11px; padding:6px 14px;" onclick="document.getElementById('add-assignment-${f.usn}').style.display='none'">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function showAddAssignment(usn) {
+    const el = document.getElementById('add-assignment-' + usn);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function addFacultyAssignment(usn) {
+    const subject_id = parseInt(document.getElementById('new-assign-subject-' + usn).value);
+    const section_id = parseInt(document.getElementById('new-assign-section-' + usn).value);
+    try {
+      await dbPost('faculty_subjects', { faculty_usn: usn, subject_id, section_id });
+      await loadFacultyList();
+    } catch (e) { alert('Could not add assignment. It may already exist.'); }
+  }
+
+  async function removeFacultyAssignment(assignmentId, usn) {
+    if (!confirm('Remove this subject assignment from this faculty?')) return;
+    await dbDelete('faculty_subjects', '?id=eq.' + assignmentId);
+    await loadFacultyList();
+  }
+
+  async function addFaculty() {
+    const usn = document.getElementById('f-id').value.trim();
+    const name = document.getElementById('f-name').value.trim();
+    const password = document.getElementById('f-pass').value.trim();
+    const subject_id = parseInt(document.getElementById('f-subject').value);
+    const section_id = parseInt(document.getElementById('f-section').value);
+    if (!usn || !name || !password) { showMsg('faculty-msg', 'Fill in all fields.', 'err'); return; }
+    try {
+      await dbPost('users', { usn, name, password, role: 'faculty', dept_id: currentDept.id });
+      await dbPost('faculty_subjects', { faculty_usn: usn, subject_id, section_id });
+      showMsg('faculty-msg', '✓ Faculty added.', 'ok');
+      document.getElementById('f-id').value = '';
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-pass').value = '';
+      loadFacultyList();
+    } catch (e) { showMsg('faculty-msg', 'Error. ID may already exist.', 'err'); }
+  }
+
+  async function deleteFaculty(usn) {
+    if (!confirm('Remove faculty ' + usn + '?')) return;
+    await dbDelete('users', '?usn=eq.' + usn);
+    loadFacultyList();
+  }
+
+  async function addSubject() {
+    const name = document.getElementById('sub-name').value.trim();
+    const code = document.getElementById('sub-code').value.trim().toUpperCase();
+    const year = parseInt(document.getElementById('sub-year').value);
+    const language = document.getElementById('sub-lang').value;
+    if (!name || !code) { showMsg('sub-msg', 'Fill in name and code.', 'err'); return; }
+    try {
+      await dbPost('subjects', { name, code, dept_id: currentDept.id, year, language });
+      showMsg('sub-msg', '✓ Subject added.', 'ok');
+      document.getElementById('sub-name').value = '';
+      document.getElementById('sub-code').value = '';
+      await loadSubjectsList();
+      // Refresh faculty dropdowns
+      allSubjects = await dbGet('subjects', '?dept_id=eq.' + currentDept.id + '&order=name.asc');
+      document.getElementById('f-subject').innerHTML = allSubjects.map(s => `<option value="${s.id}">${s.name} (Year ${s.year})</option>`).join('');
+    } catch (e) { showMsg('sub-msg', 'Error. Code may already exist.', 'err'); }
+  }
+
+  async function loadSubjectsList() {
+    const subs = await dbGet('subjects', '?dept_id=eq.' + currentDept.id + '&order=year.asc');
+    const list = document.getElementById('subjects-list');
+    if (!subs.length) { list.innerHTML = '<span style="font-size:12px;color:var(--text4);">No subjects yet.</span>'; return; }
+    list.innerHTML = subs.map(s => `
+      <div style="display:flex; align-items:center; gap:6px; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:5px 10px;">
+        <span style="font-size:11px; color:var(--accent); font-family:'JetBrains Mono',monospace;">${s.code}</span>
+        <span style="font-size:12px; color:var(--text);">${s.name}</span>
+        <span style="font-size:10px; color:var(--text4);">Yr ${s.year} · ${s.language}</span>
+        <button onclick='editSubject(${JSON.stringify(s)})' style="background:transparent; border:1px solid var(--border); color:var(--text2); cursor:pointer; font-size:10.5px; padding:2px 8px; border-radius:5px; font-family:'Inter',sans-serif;">Edit</button>
+        <button onclick="deleteSubject(${s.id})" style="background:transparent; border:none; color:#f38ba8; cursor:pointer; font-size:12px; padding:0 4px;">×</button>
+      </div>`).join('');
+  }
+
+  function editSubject(sub) {
+    document.getElementById('edit-sub-id').value = sub.id;
+    document.getElementById('edit-sub-name').value = sub.name;
+    document.getElementById('edit-sub-code').value = sub.code;
+    document.getElementById('edit-sub-year').value = sub.year;
+    document.getElementById('edit-sub-lang').value = sub.language;
+    document.getElementById('edit-subject-modal').style.display = 'flex';
+  }
+
+  function closeSubjectEdit() {
+    document.getElementById('edit-subject-modal').style.display = 'none';
+  }
+
+  async function saveSubjectEdit() {
+    const id = document.getElementById('edit-sub-id').value;
+    const name = document.getElementById('edit-sub-name').value.trim();
+    const code = document.getElementById('edit-sub-code').value.trim().toUpperCase();
+    const year = parseInt(document.getElementById('edit-sub-year').value);
+    const language = document.getElementById('edit-sub-lang').value;
+
+    if (!name || !code) { showMsg('edit-sub-msg', 'Name and code are required.', 'err'); return; }
+
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/subjects?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, code, year, language })
+      });
+      showMsg('edit-sub-msg', '✓ Subject updated.', 'ok');
+      await loadSubjectsList();
+      // Refresh faculty subject dropdown too, since the label may have changed
+      allSubjects = await dbGet('subjects', '?dept_id=eq.' + currentDept.id + '&order=name.asc');
+      const fSubjectEl = document.getElementById('f-subject');
+      if (fSubjectEl) fSubjectEl.innerHTML = allSubjects.map(s => `<option value="${s.id}">${s.name} (Year ${s.year})</option>`).join('');
+      setTimeout(closeSubjectEdit, 800);
+    } catch (e) {
+      showMsg('edit-sub-msg', 'Error updating subject. Code may already exist.', 'err');
+    }
+  }
+
+  async function deleteSubject(id) {
+    if (!confirm('Delete this subject?')) return;
+    await dbDelete('subjects', '?id=eq.' + id);
+    loadSubjectsList();
+  }
+
+  function editStudent(usn, name, password) {
+    document.getElementById('edit-usn').value = usn;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-pass').value = '';
+    document.getElementById('edit-modal').style.display = 'flex';
+    document.querySelector('#edit-modal .section-title').textContent = 'Edit Student';
+  }
+
+  function editFaculty(usn, name) {
+    document.getElementById('edit-usn').value = usn;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-pass').value = '';
+    document.getElementById('edit-modal').style.display = 'flex';
+    document.querySelector('#edit-modal .section-title').textContent = 'Edit Faculty';
+  }
+
+  function closeEdit() {
+    document.getElementById('edit-modal').style.display = 'none';
+  }
+
+  async function saveEdit() {
+    const usn = document.getElementById('edit-usn').value;
+    const name = document.getElementById('edit-name').value.trim();
+    const pass = document.getElementById('edit-pass').value.trim();
+    if (!name) { showMsg('edit-msg', 'Name cannot be empty.', 'err'); return; }
+    const update = { name };
+    if (pass) update.password = pass;
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/users?usn=eq.${usn}`, {
+        method: 'PATCH',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(update)
+      });
+      showMsg('edit-msg', '✓ Updated.', 'ok');
+      setTimeout(() => { 
+        closeEdit(); 
+        // Reload depending on what we are looking at
+        if (document.getElementById('page-students').classList.contains('active')) {
+          loadStudents(); 
+        } else {
+          loadFacultyList();
+        }
+      }, 1000);
+    } catch (e) { showMsg('edit-msg', 'Error updating.', 'err'); }
+  }
+
+  loadHome();
+</script>
+</body>
+</html>

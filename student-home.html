@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LabCode — Student</title>
+  <link rel="icon" type="image/png" href="MITE_logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root, :root[data-theme="dark"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --bg: #0f0f17;
+      --bg2: #13131f;
+      --bg3: #1e1e2e;
+      --border: #313244;
+      --text: #cdd6f4;
+      --text2: #a6adc8;
+      --text3: #6c7086;
+      --text4: #45475a;
+    }
+    :root[data-theme="light"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --bg: #f5f5f5;
+      --bg2: #ffffff;
+      --bg3: #efefef;
+      --border: #dddddd;
+      --text: #1a1a2e;
+      --text2: #444466;
+      --text3: #777799;
+      --text4: #9999aa;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; transition: background 0.2s, color 0.2s; }
+    [data-theme="light"] .topbar { background: var(--bg2) !important; border-bottom-color: var(--border) !important; }
+    [data-theme="light"] .user-badge { background: var(--bg3) !important; border-color: var(--border) !important; color: var(--accent) !important; }
+    [data-theme="light"] .logout-btn { border-color: var(--border) !important; color: var(--text3) !important; }
+    [data-theme="light"] .info-bar { background: var(--bg2) !important; border-color: var(--border) !important; }
+    [data-theme="light"] .info-divider { background: var(--border) !important; }
+    [data-theme="light"] .info-label { color: var(--text4) !important; }
+    [data-theme="light"] .info-val { color: var(--text) !important; }
+    [data-theme="light"] .greeting h1 { color: var(--text) !important; }
+    [data-theme="light"] .greeting p { color: var(--text3) !important; }
+    [data-theme="light"] .section-label { color: var(--text4) !important; }
+    [data-theme="light"] .subject-card { background: var(--bg2) !important; border-color: var(--border) !important; }
+    [data-theme="light"] .subject-card:hover { background: var(--bg3) !important; }
+    [data-theme="light"] .sub-lang { background: var(--bg3) !important; border-color: var(--border) !important; color: var(--text2) !important; }
+    [data-theme="light"] .sub-name { color: var(--text) !important; }
+    [data-theme="light"] .sub-meta { color: var(--text3) !important; }
+    [data-theme="light"] .open-btn { background: rgba(232,119,34,0.1) !important; border-color: var(--accent) !important; color: var(--accent) !important; }
+    .topbar { height: 48px; background: #13131f; border-bottom: 1px solid #1e1e2e; display: flex; align-items: center; padding: 0 20px; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .logo .icon { width: 27px; height: 27px; background: linear-gradient(135deg, var(--accent), #d4691a); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 12px rgba(232,119,34,0.3); color: white; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .user-badge { font-size: 12px; background: #1e1e2e; border: 1px solid #313244; color: #7aa2f7; padding: 4px 12px; border-radius: 20px; font-weight: 500; }
+    .logout-btn { background: transparent; border: 1px solid #313244; color: #6c7086; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .logout-btn:hover { border-color: #f38ba8; color: #f38ba8; }
+    .content { padding: 28px; max-width: 800px; margin: 0 auto; }
+    .greeting { margin-bottom: 28px; }
+    .greeting h1 { font-size: 22px; font-weight: 700; color: #cdd6f4; margin-bottom: 4px; }
+    .greeting p { font-size: 13px; color: #6c7086; }
+    .info-bar { display: flex; align-items: center; gap: 10px; background: #13131f; border: 1px solid #1e1e2e; border-radius: 10px; padding: 12px 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .info-item { display: flex; flex-direction: column; gap: 2px; }
+    .info-label { font-size: 10px; color: #45475a; text-transform: uppercase; letter-spacing: 0.06em; }
+    .info-val { font-size: 13px; font-weight: 600; color: #cdd6f4; }
+    .info-divider { width: 1px; height: 32px; background: #1e1e2e; }
+    .section-label { font-size: 11px; color: #45475a; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px; }
+    .subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    .subject-card { background: #13131f; border: 1px solid #1e1e2e; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden; }
+    .subject-card:hover { border-color: #3d59a1; background: #1a1a2e; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .sub-lang { position: absolute; top: 16px; right: 16px; font-size: 10px; background: #24243e; border: 1px solid #313244; color: #a6adc8; padding: 2px 8px; border-radius: 20px; }
+    .sub-code { font-size: 11px; color: #7aa2f7; font-family: 'JetBrains Mono', monospace; font-weight: 600; margin-bottom: 8px; }
+    .sub-name { font-size: 16px; font-weight: 700; color: #cdd6f4; margin-bottom: 6px; }
+    .sub-meta { font-size: 12px; color: #6c7086; margin-bottom: 14px; }
+    .open-btn { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #1e2a3a; border: 1px solid #3d59a1; border-radius: 6px; font-size: 12px; color: #7aa2f7; font-weight: 600; }
+    .empty-state { text-align: center; padding: 60px 20px; grid-column: 1/-1; }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+<!-- DEVICE BLOCK -->
+<div id="device-block" style="display:none; position:fixed; inset:0; background:var(--bg); z-index:99999; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:40px;">
+  <div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,var(--accent),#d06a1a); display:flex; align-items:center; justify-content:center; font-size:28px;">⚡</div>
+  <div style="font-size:20px; font-weight:700; color:var(--text); font-family:'Inter',sans-serif;">Desktop only</div>
+  <div style="font-size:14px; color:var(--text3); max-width:320px; line-height:1.6; font-family:'Inter',sans-serif;">LabCode is built for laptop and desktop screens. Please switch to a larger device to continue.</div>
+</div>
+<script>
+  (function() {
+    function checkDevice() {
+      const isSmall = window.innerWidth <= 1024;
+      const block = document.getElementById('device-block');
+      if (block) block.style.display = isSmall ? 'flex' : 'none';
+    }
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+  })();
+</script>
+<div class="topbar">
+  <div class="logo"><img src="MITE_logo.png" alt="MITE" style="height: 28px; object-fit: contain;" /> LabCode</div>
+  <div class="topbar-right">
+    <div class="user-badge" id="user-badge">Loading...</div>
+    <button onclick="toggleTheme()" id="theme-btn" style="background:transparent; border:1px solid var(--border, #313244); color:#6c7086; padding:5px 10px; border-radius:6px; font-size:12px; cursor:pointer; font-family:'Inter',sans-serif;">☀️</button>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<div class="content">
+  <div class="greeting">
+    <h1 id="greeting-text">Welcome</h1>
+    <p>Select a subject to open your lab session</p>
+  </div>
+
+  <div class="info-bar">
+    <div class="info-item">
+      <div class="info-label">Student</div>
+      <div class="info-val" id="info-name">—</div>
+    </div>
+    <div class="info-divider"></div>
+    <div class="info-item">
+      <div class="info-label">USN</div>
+      <div class="info-val" id="info-usn" style="font-family:'JetBrains Mono',monospace; font-size:12px;">—</div>
+    </div>
+    <div class="info-divider"></div>
+    <div class="info-item">
+      <div class="info-label">Department</div>
+      <div class="info-val" id="info-dept">—</div>
+    </div>
+    <div class="info-divider"></div>
+    <div class="info-item">
+      <div class="info-label">Year & Section</div>
+      <div class="info-val" id="info-section">—</div>
+    </div>
+  </div>
+
+  <div class="section-label">Your Lab Subjects</div>
+  <div class="subject-grid" id="subject-grid">
+    <div style="text-align:center; padding:40px; color:#45475a; font-size:13px; grid-column:1/-1;">Loading subjects...</div>
+  </div>
+</div>
+
+<script>
+  // Theme
+  function applyTheme() {
+    const theme = localStorage.getItem('labcode_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('labcode_theme', next);
+    applyTheme();
+  }
+  applyTheme();
+
+  const SERVER = 'https://labcode-backend.onrender.com';
+  const SUPABASE_URL = 'https://brjugcqaznpgvfbcpnxl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyanVnY3Fhem5wZ3ZmYmNwbnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjY3MDksImV4cCI6MjA5NzAwMjcwOX0.PHHcKuR0LLh-6YpEZwNPKcW9d7yL8BO-c9_z3oQYmHU';
+
+  const user = localStorage.getItem('labcode_user');
+  const name = localStorage.getItem('labcode_name');
+  const role = localStorage.getItem('labcode_role');
+  if (!user || role !== 'student') window.location.href = 'login.html';
+
+  document.getElementById('user-badge').textContent = name || user;
+  document.getElementById('info-name').textContent = name || user;
+  document.getElementById('info-usn').textContent = user;
+
+  const hour = new Date().getHours();
+  document.getElementById('greeting-text').textContent =
+    hour < 12 ? 'Good morning, ' + (name || user) :
+    hour < 17 ? 'Good afternoon, ' + (name || user) :
+    'Good evening, ' + (name || user);
+
+  // ===== SESSION HEARTBEAT (keeps single-session lock alive while browsing subjects) =====
+  const loginToken = localStorage.getItem('labcode_login_token');
+  if (loginToken) {
+    async function sendHeartbeat() {
+      try {
+        await fetch(SERVER + '/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usn: user, login_token: loginToken })
+        });
+      } catch (e) {}
+    }
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 15000);
+
+    window.addEventListener('beforeunload', () => {
+      // Only clean up if actually navigating away from the app, not into index.html
+      // (index.html keeps its own heartbeat going, so we don't want to kill the
+      // session just because the student clicked into a subject)
+    });
+  }
+
+  async function clearActiveSession() {
+    try {
+      await fetch(SERVER + '/session-logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usn: user })
+      });
+    } catch (e) {}
+  }
+
+  function logout() {
+    clearActiveSession().finally(() => {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    });
+  }
+
+  async function dbGet(table, query = '') {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    return res.json();
+  }
+
+  async function dbPost(table, data) {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  }
+
+  async function loadSubjects() {
+    try {
+      const profile = await dbGet('users', `?usn=eq.${user}`);
+      if (!profile.length) { window.location.href = 'login.html'; return; }
+
+      const student = profile[0];
+      const sectionId = student.section_id;
+      const deptId = student.dept_id;
+
+      if (sectionId) {
+        const sections = await dbGet('sections', `?id=eq.${sectionId}`);
+        if (sections.length) {
+          const sec = sections[0];
+          document.getElementById('info-section').textContent =
+            (sec.cycle ? sec.cycle + ' · ' : '') + 'Year ' + sec.year + ' · Section ' + sec.section_name;
+        }
+      }
+
+      if (deptId) {
+        const depts = await dbGet('departments', `?id=eq.${deptId}`);
+        if (depts.length) document.getElementById('info-dept').textContent = depts[0].code;
+      }
+
+      const grid = document.getElementById('subject-grid');
+
+      if (!sectionId) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🏫</div>
+            <div style="font-size:16px; font-weight:600; color:#6c7086; margin-bottom:8px;">No section assigned</div>
+            <div style="font-size:13px; color:#45475a;">Ask your admin to assign you to a section.</div>
+          </div>`;
+        return;
+      }
+
+      const facultySubjects = await dbGet('faculty_subjects', `?section_id=eq.${sectionId}&select=*,subjects(*)`);
+
+      if (!facultySubjects.length) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <div style="font-size:16px; font-weight:600; color:#6c7086; margin-bottom:8px;">No subjects yet</div>
+            <div style="font-size:13px; color:#45475a;">Your faculty hasn't been assigned to your section yet.</div>
+          </div>`;
+        return;
+      }
+
+      const seen = new Set();
+      const uniqueSubjects = facultySubjects.filter(fs => {
+        if (seen.has(fs.subject_id)) return false;
+        seen.add(fs.subject_id);
+        return true;
+      });
+
+      // Check if Exam Mode is active for this section
+      let examCardHtml = '';
+      try {
+        const stateTask = await dbGet('tasks', `?program=eq.EXAM_STATE_${sectionId}`);
+        if (stateTask.length > 0 && stateTask[0].is_active) {
+          examCardHtml = `
+            <div class="subject-card" style="border-color: #ff5a78;" onclick="openSubject('exam', 'LAB Exam', 'EXAM', ${sectionId}, 'Any')">
+              <div class="sub-lang" style="background: rgba(255,90,120,0.1); color: #ff8aa0; border-color: rgba(255,90,120,0.3);">Live Session</div>
+              <div class="sub-code" style="color: #ff5a78;">LAB EXAM</div>
+              <div class="sub-name">Ongoing Lab Examination</div>
+              <div class="sub-meta">Strict Mode Enabled</div>
+              <div class="open-btn" style="background: rgba(255,90,120,0.1); color: #ff8aa0;">
+                <span>Enter Exam Editor</span>
+                <span>→</span>
+              </div>
+            </div>`;
+        }
+      } catch (e) {}
+
+      grid.innerHTML = examCardHtml + uniqueSubjects.map(fs => {
+        const sub = fs.subjects;
+        return `
+          <div class="subject-card" onclick="openSubject(${sub.id}, '${sub.name}', '${sub.code}', ${sectionId}, '${sub.language}')">
+            <div class="sub-lang">${sub.language}</div>
+            <div class="sub-code">${sub.code}</div>
+            <div class="sub-name">${sub.name}</div>
+            <div class="sub-meta">Year ${sub.year} Lab</div>
+            <div class="open-btn">
+              <span>Open Lab Editor</span>
+              <span>→</span>
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch (err) {
+      document.getElementById('subject-grid').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <div style="font-size:16px; font-weight:600; color:#6c7086; margin-bottom:8px;">Could not load</div>
+          <div style="font-size:13px; color:#45475a;">Check your connection and try again.</div>
+        </div>`;
+    }
+  }
+
+  async function openSubject(subjectId, subjectName, subjectCode, sectionId, subjectLanguage) {
+    // Record session start
+    try {
+      await dbPost('sessions', {
+        usn: user,
+        subject_id: subjectId,
+        section_id: sectionId
+      });
+    } catch (e) { console.log('Session log failed'); }
+
+    localStorage.setItem('labcode_subject_id', subjectId);
+    localStorage.setItem('labcode_subject_name', subjectName);
+    localStorage.setItem('labcode_subject_code', subjectCode);
+    localStorage.setItem('labcode_section_id', sectionId);
+    localStorage.setItem('labcode_subject_language', subjectLanguage);
+    window.location.href = 'index.html';
+  }
+
+  loadSubjects();
+</script>
+</body>
+</html>

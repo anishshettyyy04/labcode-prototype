@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LabCode — Faculty</title>
+  <link rel="icon" type="image/png" href="MITE_logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root, :root[data-theme="dark"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.35);
+      --bg: #0a0a0f;
+      --bg2: #11111a;
+      --bg3: #1a1a26;
+      --border: #24243a;
+      --text: #f4f4f8;
+      --text2: #a8a8bc;
+      --text3: #6e6e84;
+      --text4: #4a4a5e;
+    }
+    :root[data-theme="light"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.18);
+      --bg: #f6f6f8;
+      --bg2: #ffffff;
+      --bg3: #eeeef2;
+      --border: #e2e2ea;
+      --text: #14141f;
+      --text2: #4a4a5e;
+      --text3: #8a8a9c;
+      --text4: #b0b0c0;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; transition: background 0.25s, color 0.25s; position: relative; overflow-x: hidden; }
+    .bg-glow {
+      position: fixed; top: -180px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 420px; background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none; filter: blur(40px); z-index: 0; opacity: 0.5;
+    }
+    .topbar { position: relative; z-index: 2; height: 56px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .logo .icon { width: 28px; height: 28px; background: linear-gradient(135deg, var(--accent), #d4691a); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 12px rgba(232,119,34,0.3); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .faculty-badge { font-size: 12.5px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 20px; font-weight: 600; }
+    .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); padding: 6px 11px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .logout-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); padding: 6px 14px; border-radius: 8px; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.15s; }
+    .logout-btn:hover { border-color: #ff5a78; color: #ff5a78; }
+
+    .content { position: relative; z-index: 1; padding: 44px 32px; max-width: 1000px; margin: 0 auto; }
+    .greeting { margin-bottom: 32px; }
+    .greeting h1 { font-size: 30px; font-weight: 800; color: var(--text); margin-bottom: 6px; letter-spacing: -0.02em; }
+    .greeting p { font-size: 14px; color: var(--text3); }
+
+    .section-label { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text4); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 16px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .subject-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; cursor: pointer; transition: all 0.2s cubic-bezier(.2,.8,.2,1); position: relative; overflow: hidden; }
+    .subject-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0; transition: opacity 0.2s; }
+    .subject-card:hover { border-color: rgba(232,119,34,0.4); transform: translateY(-2px); box-shadow: 0 14px 32px rgba(0,0,0,0.2); }
+    .subject-card:hover::before { opacity: 1; }
+    .subject-card.expanded { border-color: rgba(232,119,34,0.5); box-shadow: 0 14px 32px rgba(0,0,0,0.25); }
+    .subject-card.expanded::before { opacity: 1; }
+    .subject-card .sub-code { font-size: 11px; color: var(--accent); font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .subject-card .sub-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.01em; }
+    .subject-card .sub-meta { font-size: 12.5px; color: var(--text3); }
+    .subject-card .sub-lang { position: absolute; top: 18px; right: 18px; font-size: 10px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+    .classes-dropdown { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: none; }
+    .subject-card.expanded .classes-dropdown { display: block; }
+    .class-pill { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; margin-bottom: 7px; cursor: pointer; transition: all 0.15s; font-size: 12.5px; color: var(--text2); font-weight: 500; }
+    .class-pill:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,119,34,0.08); }
+    .class-pill:last-child { margin-bottom: 0; }
+    .class-pill .pill-arrow { color: var(--accent); font-weight: 700; }
+    .empty-state { text-align: center; padding: 60px 20px; grid-column: 1/-1; }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+    /* Signature Modal */
+    .sig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .sig-content { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 380px; position: relative; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 30px 60px rgba(0,0,0,0.4); }
+    .sig-header { font-size: 18px; font-weight: 700; color: var(--text); }
+    .sig-close { position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--text3); cursor: pointer; font-size: 18px; }
+    .sig-preview { width: 100%; height: 120px; background: var(--bg3); border: 1px dashed var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 8px; position: relative; }
+    .sig-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .sig-preview .placeholder { font-size: 12px; color: var(--text3); position: absolute; pointer-events: none; }
+    .sig-toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 13.5px; font-weight: 600; color: var(--text2); }
+    .sig-toggle { width: 44px; height: 24px; background: var(--bg3); border-radius: 12px; position: relative; cursor: pointer; transition: 0.2s; border: 1px solid var(--border); }
+    .sig-knob { width: 16px; height: 16px; background: #fff; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .sig-btn { width: 100%; background: linear-gradient(135deg, var(--accent), #d4691a); border: none; border-radius: 8px; padding: 12px; font-size: 13px; color: #fff; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; margin-top: 4px; }
+    .empty-state h2 { font-size: 16px; font-weight: 600; color: var(--text3); margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; color: var(--text4); line-height: 1.6; }
+    .loading { text-align: center; padding: 40px; color: var(--text4); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- DEVICE BLOCK -->
+<div id="device-block" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:99999; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:40px;">
+  <div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,#E87722,#d06a1a); display:flex; align-items:center; justify-content:center; font-size:28px;">⚡</div>
+  <div style="font-size:20px; font-weight:700; color:#fff; font-family:'Inter',sans-serif;">Desktop only</div>
+  <div style="font-size:14px; color:#8a8a9a; max-width:320px; line-height:1.6; font-family:'Inter',sans-serif;">LabCode is built for laptop and desktop screens. Please switch to a larger device to continue.</div>
+</div>
+<script>
+  (function() {
+    function checkDevice() {
+      const isSmall = window.innerWidth <= 1024;
+      const block = document.getElementById('device-block');
+      if (block) block.style.display = isSmall ? 'flex' : 'none';
+    }
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+  })();
+</script>
+
+<div class="bg-glow"></div>
+
+<div class="topbar">
+  <div class="logo"><img src="MITE_logo.png" alt="MITE" style="height: 28px; object-fit: contain;" /> LabCode</div>
+  <div class="topbar-right">
+    <div class="faculty-badge" id="faculty-name">Loading...</div>
+    <button class="icon-btn" onclick="openSignatureModal()" title="Signature Settings">✒️</button>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="logout-btn" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<div class="content">
+  <div class="greeting">
+    <h1 id="greeting-text">Good morning</h1>
+    <p>Select a subject to open its class dashboard</p>
+  </div>
+
+  <div class="section-label">Your Subjects</div>
+  <div class="subject-grid" id="subject-grid">
+    <div class="loading">Loading your subjects...</div>
+  </div>
+</div>
+
+<div class="sig-modal" id="sig-modal">
+  <div class="sig-content">
+    <button class="sig-close" onclick="closeSignatureModal()">✕</button>
+    <div class="sig-header">Faculty Signature</div>
+    <div style="font-size:12.5px; color:var(--text3); line-height:1.5;">Upload a PNG of your signature with a transparent background. It will be stamped on exported student lab records.</div>
+    <input type="file" id="sig-file" accept="image/png" style="display:none;" onchange="handleSignatureUpload(event)" />
+    <div class="sig-preview" onclick="document.getElementById('sig-file').click()" style="cursor:pointer;" title="Click to upload">
+      <div class="placeholder" id="sig-placeholder">Click to upload PNG</div>
+      <img id="sig-img" style="display:none;" />
+    </div>
+    <div class="sig-toggle-row">
+      <span>Include in PDF Export</span>
+      <div class="sig-toggle" id="sig-toggle" onclick="toggleSignatureEnabled()">
+        <div class="sig-knob" id="sig-knob"></div>
+      </div>
+    </div>
+    <button class="sig-btn" onclick="saveSignature()">Save Signature Settings</button>
+  </div>
+</div>
+
+<script>
+  // Theme
+  function applyTheme() {
+    const theme = localStorage.getItem('labcode_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('labcode_theme', next);
+    applyTheme();
+  }
+  applyTheme();
+
+  const SERVER = 'https://labcode-backend.onrender.com';
+  const user = localStorage.getItem('labcode_user');
+  const name = localStorage.getItem('labcode_name');
+  const role = localStorage.getItem('labcode_role');
+
+  if (!user || role !== 'faculty') window.location.href = 'login.html';
+
+  document.getElementById('faculty-name').textContent = name || user;
+
+  // Greeting based on time
+  const hour = new Date().getHours();
+  document.getElementById('greeting-text').textContent =
+    hour < 12 ? 'Good morning, ' + (name || user) :
+    hour < 17 ? 'Good afternoon, ' + (name || user) :
+    'Good evening, ' + (name || user);
+
+  function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+
+  async function loadSubjects() {
+    try {
+      const res = await fetch(`${SERVER}/faculty-subjects/${user}`);
+      const data = await res.json();
+      const grid = document.getElementById('subject-grid');
+
+      if (!data.length) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1;">
+            <div class="empty-icon">📚</div>
+            <h2>No subjects assigned yet</h2>
+            <p>Ask your HOD or admin to assign subjects to your account.<br>They can do this from the Admin → Department → Faculty page.</p>
+          </div>`;
+        return;
+      }
+
+      // Group by subject
+      const subjectMap = {};
+      const uniqueSectionsMap = {};
+      data.forEach(row => {
+        const key = row.subjects.id;
+        if (!subjectMap[key]) {
+          subjectMap[key] = { subject: row.subjects, sections: [] };
+        }
+        if (row.sections) {
+          subjectMap[key].sections.push(row.sections);
+          uniqueSectionsMap[row.sections.id] = row.sections;
+        }
+      });
+      const uniqueSections = Object.values(uniqueSectionsMap);
+
+      let examCard = '';
+      if (uniqueSections.length > 0) {
+        examCard = `
+        <div class="subject-card" id="card-exam" onclick="toggleCard('exam')" style="border-color: #ff5a78;">
+          <div class="sub-lang" style="background: rgba(255,90,120,0.1); color: #ff8aa0; border-color: rgba(255,90,120,0.3);">Live Session</div>
+          <div class="sub-code" style="color: #ff5a78;">LAB EXAM</div>
+          <div class="sub-name">Conduct Lab Exam</div>
+          <div class="sub-meta">Available for ${uniqueSections.length} class${uniqueSections.length !== 1 ? 'es' : ''}</div>
+          <div class="classes-dropdown">
+            <div style="font-size:11px; color:var(--text4); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Select class for exam</div>
+            ${uniqueSections.map(sec => `
+              <div class="class-pill" onclick="event.stopPropagation(); openDashboard('exam', ${sec.id}, 'LAB Exam', '${sec.cycle ? sec.cycle + ' ' : ''}Year ${sec.year} Sec ${sec.section_name}')">
+                <span>${sec.cycle ? sec.cycle + ' — ' : ''}Year ${sec.year} · Section ${sec.section_name}</span>
+                <span class="pill-arrow">→</span>
+              </div>`).join('')}
+          </div>
+        </div>`;
+      }
+
+      grid.innerHTML = examCard + Object.values(subjectMap).map(({ subject, sections }) => `
+        <div class="subject-card" id="card-${subject.id}" onclick="toggleCard(${subject.id})">
+          <div class="sub-lang">${subject.language}</div>
+          <div class="sub-code">${subject.code}</div>
+          <div class="sub-name">${subject.name}</div>
+          <div class="sub-meta">Year ${subject.year} · ${sections.length} class${sections.length !== 1 ? 'es' : ''}</div>
+          <div class="classes-dropdown">
+            <div style="font-size:11px; color:var(--text4); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Select class</div>
+            ${sections.map(sec => `
+              <div class="class-pill" onclick="event.stopPropagation(); openDashboard(${subject.id}, ${sec.id}, '${subject.name}', '${sec.cycle ? sec.cycle + ' ' : ''}Year ${sec.year} Sec ${sec.section_name}')">
+                <span>${sec.cycle ? sec.cycle + ' — ' : ''}Year ${sec.year} · Section ${sec.section_name}</span>
+                <span class="pill-arrow">→</span>
+              </div>`).join('')}
+          </div>
+        </div>`).join('');
+
+    } catch (err) {
+      document.getElementById('subject-grid').innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-icon">⚠️</div>
+          <h2>Could not load subjects</h2>
+          <p>Make sure the server is running.</p>
+        </div>`;
+    }
+  }
+
+  function toggleCard(subjectId) {
+    const card = document.getElementById('card-' + subjectId);
+    const isExpanded = card.classList.contains('expanded');
+    document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('expanded'));
+    if (!isExpanded) card.classList.add('expanded');
+  }
+
+  function openDashboard(subjectId, sectionId, subjectName, sectionLabel) {
+    localStorage.setItem('labcode_subject_id', subjectId);
+    localStorage.setItem('labcode_section_id', sectionId);
+    localStorage.setItem('labcode_subject_name', subjectName);
+    localStorage.setItem('labcode_section_label', sectionLabel);
+    window.location.href = 'dashboard.html';
+  }
+
+  let sigBase64 = null;
+  let sigEnabled = false;
+
+  async function loadSignature() {
+    sigBase64 = localStorage.getItem('labcode_signature_image') || null;
+    sigEnabled = localStorage.getItem('labcode_signature_enabled') === 'true';
+    updateSignatureUI();
+  }
+
+  function openSignatureModal() {
+    document.getElementById('sig-modal').style.display = 'flex';
+    loadSignature();
+  }
+
+  function closeSignatureModal() {
+    document.getElementById('sig-modal').style.display = 'none';
+  }
+
+  function handleSignatureUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      sigBase64 = evt.target.result;
+      updateSignatureUI();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function toggleSignatureEnabled() {
+    sigEnabled = !sigEnabled;
+    updateSignatureUI();
+  }
+
+  function updateSignatureUI() {
+    const img = document.getElementById('sig-img');
+    const placeholder = document.getElementById('sig-placeholder');
+    if (sigBase64) {
+      img.src = sigBase64;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+    } else {
+      img.style.display = 'none';
+      placeholder.style.display = 'block';
+    }
+    const t = document.getElementById('sig-toggle');
+    const k = document.getElementById('sig-knob');
+    if (sigEnabled) {
+      t.style.background = 'var(--accent)';
+      k.style.left = '23px';
+    } else {
+      t.style.background = 'var(--bg3)';
+      k.style.left = '3px';
+    }
+  }
+
+  async function saveSignature() {
+    if (sigBase64) {
+      localStorage.setItem('labcode_signature_image', sigBase64);
+    } else {
+      localStorage.removeItem('labcode_signature_image');
+    }
+    localStorage.setItem('labcode_signature_enabled', sigEnabled);
+    alert('Signature settings saved!');
+    closeSignatureModal();
+  }
+
+  loadSubjects();
+</script>
+</body>
+</html>

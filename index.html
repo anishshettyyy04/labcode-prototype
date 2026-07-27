@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LabCode — Editor</title>
+  <link rel="icon" type="image/png" href="MITE_logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root, :root[data-theme="dark"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.35);
+      --bg: #0a0a0f;
+      --bg2: #11111a;
+      --bg3: #1a1a26;
+      --border: #24243a;
+      --text: #f4f4f8;
+      --text2: #a8a8bc;
+      --text3: #6e6e84;
+      --text4: #4a4a5e;
+    }
+    :root[data-theme="light"] {
+      --accent: #E87722;
+      --accent2: #1B3A6B;
+      --accent-glow: rgba(232,119,34,0.18);
+      --bg: #f6f6f8;
+      --bg2: #ffffff;
+      --bg3: #eeeef2;
+      --border: #e2e2ea;
+      --text: #14141f;
+      --text2: #4a4a5e;
+      --text3: #8a8a9c;
+      --text4: #b0b0c0;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background 0.25s, color 0.25s; }
+
+    .topbar { height: 52px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 18px; gap: 12px; flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+    .logo .icon { width: 27px; height: 27px; background: linear-gradient(135deg, var(--accent), #d4691a); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; box-shadow: 0 4px 12px rgba(232,119,34,0.3); }
+    .divider { width: 1px; height: 20px; background: var(--border); }
+    .session-info { font-size: 12.5px; color: var(--text3); font-weight: 500; }
+    .lang-select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; font-size: 12.5px; font-family: 'Inter', sans-serif; cursor: pointer; font-weight: 500; }
+    .lang-locked { display: flex; align-items: center; gap: 7px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); padding: 6px 13px; border-radius: 8px; font-size: 12.5px; font-weight: 600; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .user-badge { font-size: 12.5px; background: var(--bg3); border: 1px solid var(--border); color: var(--accent); padding: 5px 13px; border-radius: 20px; font-weight: 600; }
+    .icon-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); padding: 6px 11px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .timer { font-size: 12.5px; background: rgba(249,226,175,0.1); border: 1px solid rgba(249,226,175,0.35); color: #f9d889; padding: 5px 13px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+    .timer.urgent { color: #ff8aa0; border-color: rgba(255,90,120,0.4); background: rgba(255,90,120,0.1); }
+    .logout-btn { background: transparent; border: 1px solid var(--border); color: var(--text3); padding: 6px 14px; border-radius: 8px; font-size: 12.5px; cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.15s; }
+    .logout-btn:hover { border-color: #ff5a78; color: #ff5a78; }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .sidebar { width: 210px; min-width: 160px; max-width: 400px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; position: relative; }
+    .resize-handle-v { position: absolute; top: 0; right: -3px; width: 6px; height: 100%; cursor: col-resize; z-index: 5; }
+    .resize-handle-v:hover { background: rgba(232,119,34,0.3); }
+    .resize-handle-h { height: 6px; cursor: row-resize; background: transparent; flex-shrink: 0; margin-top: -3px; margin-bottom: -3px; position: relative; z-index: 5; }
+    .resize-handle-h:hover { background: rgba(232,119,34,0.3); }
+    .sidebar-header { padding: 16px 14px 10px; }
+    .sidebar-header .lab-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+    .sidebar-header .lab-sub { font-size: 11px; color: var(--text4); margin-top: 3px; }
+    .sidebar-label { font-size: 10px; color: var(--text4); text-transform: uppercase; letter-spacing: 0.08em; padding: 10px 14px 6px; font-weight: 700; }
+    .prog-list { flex: 1; padding: 4px 8px; overflow-y: auto; }
+    .prog-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text3); transition: all 0.15s; }
+    .prog-item:hover { background: var(--bg3); color: var(--text2); }
+    .prog-item.active { background: rgba(232,119,34,0.12); color: var(--accent); }
+    .prog-item .prog-icon { font-size: 13px; flex-shrink: 0; }
+    .prog-item .prog-name { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    .prog-item .prog-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-pending { background: var(--text4); }
+    .dot-done { background: #7ee2a0; }
+    .dot-active { background: var(--accent); }
+    .sidebar-footer { padding: 14px; border-top: 1px solid var(--border); }
+    .progress-label { font-size: 10px; color: var(--text4); margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: 600; }
+    .progress-bar { background: var(--bg3); border-radius: 3px; height: 5px; overflow: hidden; }
+    .progress-fill { background: linear-gradient(90deg, var(--accent), #f7a85a); height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+    .editor-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .editor-tabs { height: 38px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; padding: 0 14px; gap: 4px; flex-shrink: 0; }
+    .editor-tab { display: flex; align-items: center; gap: 6px; padding: 0 14px; font-size: 12.5px; color: var(--text4); cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; transition: color 0.15s; }
+    .editor-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    /* CODE AREA — always dark, regardless of theme, like every real code editor */
+    .code-area { flex: 1; display: flex; overflow: hidden; background: #0d0d12; position: relative; }
+    .line-numbers { padding: 14px 8px 14px 14px; text-align: right; font-size: 13px; line-height: 1.7; color: #3a3a4a; user-select: none; font-family: 'JetBrains Mono', monospace; min-width: 40px; background: #0d0d12; white-space: pre; overflow: hidden; flex-shrink: 0; }
+    .code-editor-wrap { flex: 1; position: relative; overflow: hidden; }
+    .code-highlight { position: absolute; inset: 0; padding: 14px 14px 14px 6px; font-size: 13px; line-height: 1.7; font-family: 'JetBrains Mono', monospace; white-space: pre; pointer-events: none; overflow: hidden; margin: 0; color: #e4e4ec; }
+    .code-editor { position: relative; flex: 1; width: 100%; height: 100%; padding: 14px 14px 14px 6px; font-size: 13px; line-height: 1.7; color: transparent; background: transparent; border: none; outline: none; resize: none; font-family: 'JetBrains Mono', monospace; overflow-y: auto; caret-color: var(--accent); white-space: pre; }
+    .code-editor.plain { color: #e4e4ec; }
+    /* Syntax token colors */
+    .tok-keyword { color: #ff8fc9; }
+    .tok-string { color: #a8e890; }
+    .tok-comment { color: #6b7280; font-style: italic; }
+    .tok-number { color: #f9c97a; }
+    .tok-function { color: #82c8ff; }
+    .tok-tag { color: #ff8fa3; }
+    .tok-attr { color: #f9c97a; }
+    .tab-content { flex: 1; overflow-y: auto; padding: 24px; display: none; }
+
+    .bottom-panel { height: 180px; min-height: 100px; max-height: 60vh; border-top: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg2); flex-shrink: 0; position: relative; }
+    .panel-tabs { height: 34px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; padding: 0 14px; flex-shrink: 0; }
+    .panel-tab { display: flex; align-items: center; padding: 0 14px; font-size: 11px; color: var(--text4); cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+    .panel-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .output-area { flex: 1; padding: 12px 18px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #7ee2a0; overflow-y: auto; line-height: 1.7; white-space: pre-wrap; background: #0d0d12; }
+    .output-area .err { color: #ff8aa0; }
+
+    /* Editor Light Theme Overrides */
+    body.editor-light .code-area { background: #ffffff; border-right: 1px solid var(--border); }
+    body.editor-light .line-numbers { background: #f8f9fa; color: #a0a0a0; border-right: 1px solid #e2e2ea; }
+    body.editor-light .code-highlight { color: #333333; }
+    body.editor-light .code-editor.plain { color: #333333; }
+    body.editor-light .tok-keyword { color: #d73a49; }
+    body.editor-light .tok-string { color: #032f62; }
+    body.editor-light .tok-comment { color: #6a737d; }
+    body.editor-light .tok-number { color: #005cc5; }
+    body.editor-light .tok-function { color: #6f42c1; }
+    body.editor-light .tok-tag { color: #22863a; }
+    body.editor-light .tok-attr { color: #6f42c1; }
+    body.editor-light .output-area { background: #ffffff; color: #22863a; border-left: 1px solid var(--border); }
+    body.editor-light .output-area .sys { color: #6a737d; }
+    body.editor-light .output-area .err { color: #cb2431; }
+    
+    .theme-dropdown { margin-left: auto; position: relative; display: flex; align-items: center; }
+    .theme-menu { display: none; position: absolute; top: 100%; right: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 100; min-width: 130px; }
+    .theme-option { padding: 8px 12px; font-size: 12px; color: var(--text); cursor: pointer; border-radius: 6px; transition: background 0.15s; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .theme-option:hover { background: var(--bg3); color: var(--accent); }
+
+    .runbar { height: 48px; background: var(--bg); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0; }
+    .run-btn { display: flex; align-items: center; gap: 6px; padding: 8px 20px; background: linear-gradient(135deg, var(--accent), #d4691a); border: none; border-radius: 8px; color: #ffffff; font-size: 13px; font-family: 'Inter', sans-serif; font-weight: 700; cursor: pointer; transition: all 0.15s; box-shadow: 0 6px 18px rgba(232,119,34,0.3); }
+    .run-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(232,119,34,0.4); }
+    .run-btn:disabled { background: var(--bg3); color: var(--text4); cursor: not-allowed; box-shadow: none; }
+    .export-btn { display: flex; align-items: center; gap: 6px; padding: 8px 18px; background: rgba(126,226,160,0.08); border: 1px solid rgba(126,226,160,0.35); border-radius: 8px; color: #7ee2a0; font-size: 12.5px; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+    .export-btn:hover { background: rgba(126,226,160,0.15); }
+    .status-bar { margin-left: auto; font-size: 11px; color: var(--text4); }
+    .paste-warn { font-size: 11px; background: rgba(250,179,135,0.1); border: 1px solid rgba(250,179,135,0.35); color: #fab387; padding: 4px 12px; border-radius: 20px; font-weight: 500; }
+    .toast { display: none; position: fixed; top: 64px; left: 50%; transform: translateX(-50%); background: #ff5a78; color: #fff; font-size: 12px; font-weight: 700; padding: 7px 22px; border-radius: 20px; z-index: 100; white-space: nowrap; box-shadow: 0 8px 20px rgba(255,90,120,0.35); }
+    .obs-auto-msg { font-size: 12px; color: #7ee2a0; margin-bottom: 12px; min-height: 18px; }
+    .obs-textarea { width: 100%; height: 200px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; resize: none; outline: none; line-height: 1.7; }
+    .obs-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,119,34,0.15); }
+    .obs-save-btn { margin-top: 12px; background: linear-gradient(135deg, var(--accent), #d4691a); border: none; border-radius: 8px; padding: 9px 20px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; box-shadow: 0 6px 18px rgba(232,119,34,0.3); }
+    .prob-title { font-size: 14px; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+    .prob-sub { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+    .prob-desc { font-size: 13px; color: var(--text2); line-height: 1.8; }
+
+    /* Proctoring violation modal */
+    .proctor-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99998; align-items:center; justify-content:center; }
+    .proctor-modal { background:#fff; border-radius:16px; padding:40px 36px 32px; max-width:440px; width:90%; text-align:center; box-shadow:0 25px 60px rgba(0,0,0,0.5); }
+    .proctor-icon { width:64px; height:64px; border-radius:50%; background:#fee2e2; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:32px; }
+    .proctor-title { font-size:20px; font-weight:800; color:#1a1a2e; margin-bottom:8px; }
+    .proctor-text { font-size:14px; color:#555; line-height:1.6; margin-bottom:8px; }
+    .proctor-warn { background:#fef9c3; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; font-size:13px; color:#854d0e; line-height:1.5; margin-bottom:20px; }
+    .proctor-count { font-size:12px; color:#ef4444; font-weight:700; margin-bottom:16px; }
+    .proctor-btn { display:inline-flex; align-items:center; gap:6px; background:#22c55e; color:#fff; border:none; border-radius:10px; padding:12px 28px; font-size:15px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; box-shadow:0 6px 18px rgba(34,197,94,0.3); transition:all 0.15s; }
+    .proctor-btn:hover { transform:translateY(-1px); box-shadow:0 8px 22px rgba(34,197,94,0.4); }
+  </style>
+</head>
+<body>
+
+<!-- DEVICE BLOCK -->
+<div id="device-block" style="display:none; position:fixed; inset:0; background:#0a0a0f; z-index:99999; flex-direction:column; align-items:center; justify-content:center; gap:20px; text-align:center; padding:40px;">
+  <div style="width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,#E87722,#d06a1a); display:flex; align-items:center; justify-content:center; font-size:28px;">⚡</div>
+  <div style="font-size:20px; font-weight:700; color:#fff; font-family:'Inter',sans-serif;">Desktop only</div>
+  <div style="font-size:14px; color:#8a8a9a; max-width:320px; line-height:1.6; font-family:'Inter',sans-serif;">LabCode is built for laptop and desktop screens. Please switch to a larger device to continue.</div>
+</div>
+<script>
+  (function() {
+    function checkDevice() {
+      const isSmall = window.innerWidth <= 1024;
+      const block = document.getElementById('device-block');
+      if (block) block.style.display = isSmall ? 'flex' : 'none';
+    }
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+  })();
+</script>
+
+<div class="toast" id="toast">⛔ Paste is disabled in LabCode</div>
+
+<!-- PROCTORING VIOLATION MODAL -->
+<div class="proctor-overlay" id="proctor-overlay">
+  <div class="proctor-modal">
+    <div class="proctor-icon">⚠️</div>
+    <div class="proctor-title">Proctoring Violation</div>
+    <div class="proctor-text">You have exited fullscreen mode or failed to enter it. Please stay in fullscreen during the test.</div>
+    <div class="proctor-warn">Exiting fullscreen or malpractice detected. Repeated violations may lead to test termination.</div>
+    <div class="proctor-count" id="proctor-count">Violation 1 of 4</div>
+    <button class="proctor-btn" type="button" onclick="reEnterFullscreen()">Enter Fullscreen ›</button>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo"><img src="MITE_logo.png" alt="MITE" style="height: 28px; object-fit: contain;" /> LabCode</div>
+  <div class="divider"></div>
+  <div class="session-info">IS Lab — Sem 5</div>
+  <div class="lang-locked" id="lang-locked" style="display:none;">
+    <span style="font-size:11px;">🔒</span>
+    <span id="lang-locked-text">Python</span>
+  </div>
+  <select class="lang-select" id="language" onchange="onLanguageChange()">
+    <option value="50">C</option>
+    <option value="54">C++</option>
+    <option value="71" selected>Python</option>
+    <option value="62">Java</option>
+    <option value="63">JavaScript</option>
+    <option value="frontend">Frontend (HTML+CSS+JS)</option>
+  </select>
+  <div class="topbar-right">
+    <div class="user-badge" id="user-badge">Loading...</div>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">☀️</button>
+    <button class="logout-btn" type="button" onclick="goBack()">← Subjects</button>
+    <button class="logout-btn" type="button" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="lab-name" id="lab-name">Lab Session</div>
+      <div class="lab-sub" id="lab-sub">—</div>
+    </div>
+    <div class="sidebar-label">Programs</div>
+    <div class="prog-list" id="prog-list">
+      </div>
+    <div class="sidebar-footer">
+      <div class="progress-label">
+        <span>Progress</span>
+        <span id="progress-text">0 / 0</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+    <div class="resize-handle-v" id="sidebar-resize"></div>
+  </div>
+
+  <div class="editor-wrap">
+    <div class="editor-tabs">
+      <div class="editor-tab active" onclick="switchTab(this, 'editor')">Editor</div>
+      <div class="editor-tab" onclick="switchTab(this, 'problem')">Problem</div>
+      <div class="editor-tab" onclick="switchTab(this, 'observation')">Observation</div>
+      <div class="theme-dropdown">
+        <div class="editor-tab" onclick="toggleEditorThemeMenu(event)">🌓 Theme</div>
+        <div class="theme-menu" id="editor-theme-menu">
+          <div class="theme-option" onclick="setEditorTheme('dark')">🌙 Dark Theme</div>
+          <div class="theme-option" onclick="setEditorTheme('light')">☀️ Light Theme</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-area" id="tab-editor" style="display:flex;">
+      <div class="line-numbers" id="line-numbers">1</div>
+      <div class="code-editor-wrap">
+        <pre class="code-highlight" id="code-highlight"></pre>
+        <textarea class="code-editor" id="code" spellcheck="false">print("Hello from LabCode!")</textarea>
+      </div>
+    </div>
+
+    <div id="tab-frontend" style="display:none; flex:1; overflow:hidden; flex-direction:column;">
+      <div style="display:flex; height:36px; background:#0f0f17; border-bottom:1px solid #1e1e2e; flex-shrink:0;">
+        <div class="fe-tab active" id="fe-html-tab" onclick="switchFETab('html')" style="display:flex; align-items:center; padding:0 16px; font-size:12px; color:#cdd6f4; cursor:pointer; border-bottom:2px solid #E87722; gap:6px;"><span style="color:#e44d26;">⬡</span> HTML</div>
+        <div class="fe-tab" id="fe-css-tab" onclick="switchFETab('css')" style="display:flex; align-items:center; padding:0 16px; font-size:12px; color:#45475a; cursor:pointer; border-bottom:2px solid transparent; gap:6px;"><span style="color:#264de4;">⬡</span> CSS</div>
+        <div class="fe-tab" id="fe-js-tab" onclick="switchFETab('js')" style="display:flex; align-items:center; padding:0 16px; font-size:12px; color:#45475a; cursor:pointer; border-bottom:2px solid transparent; gap:6px;"><span style="color:#f7df1e;">⬡</span> JavaScript</div>
+        <div style="margin-left:auto; display:flex; align-items:center; padding:0 12px;">
+          <button onclick="runFrontend()" style="background:#E87722; border:none; border-radius:5px; padding:4px 14px; font-size:11px; color:#fff; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600;">▶ Run Preview</button>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; overflow:hidden;">
+        <div style="display:flex; flex-direction:column; flex:1; overflow:hidden; border-right:1px solid #1e1e2e;">
+          <div id="fe-html-editor" style="flex:1; display:flex; overflow:hidden;">
+            <div class="line-numbers" id="fe-html-nums">1</div>
+            <div class="code-editor-wrap">
+              <pre class="code-highlight" id="fe-html-highlight"></pre>
+              <textarea class="code-editor" id="fe-html" spellcheck="false" oninput="updateFELineNums('html')" onpaste="handleFEPaste(event)"></textarea>
+            </div>
+          </div>
+          <div id="fe-css-editor" style="flex:1; display:none; overflow:hidden; border-top:1px solid var(--border);">
+            <div class="line-numbers" id="fe-css-nums">1</div>
+            <div class="code-editor-wrap">
+              <pre class="code-highlight" id="fe-css-highlight"></pre>
+              <textarea class="code-editor" id="fe-css" spellcheck="false" oninput="updateFELineNums('css')" onpaste="handleFEPaste(event)"></textarea>
+            </div>
+          </div>
+          <div id="fe-js-editor" style="flex:1; display:none; overflow:hidden; border-top:1px solid var(--border);">
+            <div class="line-numbers" id="fe-js-nums">1</div>
+            <div class="code-editor-wrap">
+              <pre class="code-highlight" id="fe-js-highlight"></pre>
+              <textarea class="code-editor" id="fe-js" spellcheck="false" oninput="updateFELineNums('js')" onpaste="handleFEPaste(event)"></textarea>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="height:32px; background:#13131f; border-bottom:1px solid #1e1e2e; display:flex; align-items:center; padding:0 14px; font-size:11px; color:#45475a; flex-shrink:0;">Preview</div>
+          <iframe id="fe-preview" style="flex:1; border:none; background:#fff;"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-problem">
+      <div class="prob-title" id="problem-title">Loading Program...</div>
+      <div class="prob-sub session-info-sub">Loading...</div>
+      <div class="prob-desc" id="problem-desc">Loading description...</div>
+    </div>
+
+    <div class="tab-content" id="tab-observation">
+      <div style="font-size:13px; color:var(--accent); font-weight:600; margin-bottom:16px;" id="obs-prog-title">Observation</div>
+      <div class="obs-auto-msg" id="obs-auto"></div>
+      <textarea class="obs-textarea" id="obs-text" placeholder="Run your program first — observation will be auto-generated here..."></textarea>
+      <button type="button" class="obs-save-btn" onclick="saveObservation()">Save Observation</button>
+    </div>
+
+    <div class="resize-handle-h" id="bottom-resize"></div>
+    <div class="bottom-panel" id="bottom-panel">
+      <div class="panel-tabs">
+        <div class="panel-tab active" id="panel-tab-output" onclick="switchPanelTab('output')">Terminal</div>
+        <div class="panel-tab" id="panel-tab-errors" onclick="switchPanelTab('errors')">Errors</div>
+      </div>
+      <div id="panel-output" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+        <div class="output-area" id="output" style="flex:1;"><span class="sys">// Click Run to start. If your program asks for input, type it in the bar below before running, then watch it play out here like a real terminal session.</span></div>
+        <div style="flex-shrink:0; border-top:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; padding:0 12px; gap:8px;">
+          <span style="color:var(--accent); font-family:'JetBrains Mono', monospace; font-size:13px; flex-shrink:0;">❯</span>
+          <input id="stdin-input" type="text" placeholder="Type one input value, press Enter to queue it, then Run..." 
+                 style="flex:1; background:transparent; border:none; outline:none; padding:10px 0; font-size:12.5px; font-family:'JetBrains Mono', monospace; color:#e4e4ec;"
+                 oninput="onStdinKeyChange()" onkeydown="onStdinKeyDown(event)" />
+          <div id="queued-count" style="flex-shrink:0; font-size:10.5px; color:var(--text4); padding:4px 8px; background:var(--bg3); border-radius:10px; display:none;">0 queued</div>
+        </div>
+      </div>
+      <div id="panel-errors" style="display:none; flex:1; overflow-y:auto; padding:12px 16px; font-size:12px; font-family:'JetBrains Mono', monospace; color:#ff8aa0; line-height:1.7; white-space:pre-wrap;"><span style="color:var(--text4);">// Compile/runtime errors will appear here after you run</span></div>
+    </div>
+
+    <div class="runbar">
+      <button class="run-btn" type="button" id="run-btn" onclick="runCode()">▶ Run</button>
+      <button class="run-btn" type="button" id="preview-btn" onclick="showPreview()" style="display:none; background:#2a1a3a; border:1px solid #5a2d8a;">👁 Preview</button>
+      <button class="export-btn" type="button" onclick="exportPDF()">⬇ Export Lab Record</button>
+      <div class="paste-warn">Paste disabled</div>
+      <div class="status-bar" id="status">Ready</div>
+    </div>
+  </div>
+</div>
+
+<div id="preview-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; align-items:center; justify-content:center;">
+  <div style="width:80%; height:80%; background:#ffffff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+    <div style="height:44px; background:#13131f; display:flex; align-items:center; padding:0 16px; justify-content:space-between; flex-shrink:0;">
+      <span style="font-size:13px; color:#cdd6f4; font-weight:600;">⚡ HTML Preview</span>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span style="font-size:11px; color:#45475a;">Live output</span>
+        <button onclick="closePreview()" style="background:transparent; border:1px solid #5a2d2d; color:#f38ba8; border-radius:6px; padding:4px 12px; font-size:12px; cursor:pointer; font-family:'Inter',sans-serif;">Close</button>
+      </div>
+    </div>
+    <iframe id="preview-frame" style="flex:1; border:none; width:100%; background:#ffffff;"></iframe>
+  </div>
+</div>
+
+<script>
+  // Theme
+  function applyTheme() {
+    const theme = localStorage.getItem('labcode_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  // --- EDITOR THEME TOGGLE ---
+  function toggleEditorThemeMenu(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('editor-theme-menu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function setEditorTheme(mode) {
+    const isLight = mode === 'light';
+    if (isLight) {
+      document.body.classList.add('editor-light');
+      localStorage.setItem('labcode_editor_theme', 'light');
+    } else {
+      document.body.classList.remove('editor-light');
+      localStorage.setItem('labcode_editor_theme', 'dark');
+    }
+    const menu = document.getElementById('editor-theme-menu');
+    if (menu) menu.style.display = 'none';
+  }
+
+  // Hide menu when clicking outside
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('editor-theme-menu');
+    if (menu && menu.style.display === 'block' && !e.target.closest('.theme-dropdown')) {
+      menu.style.display = 'none';
+    }
+  });
+
+  // Load saved editor theme
+  if (localStorage.getItem('labcode_editor_theme') === 'light') {
+    setEditorTheme('light');
+  } else {
+    setEditorTheme('dark');
+  }
+
+  // --- THEME TOGGLE (GLOBAL) ---
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('labcode_theme', next);
+    applyTheme();
+  }
+  applyTheme();
+
+  const SERVER = 'https://labcode-backend.onrender.com';
+
+  // Auth
+  const user = localStorage.getItem('labcode_user');
+  const name = localStorage.getItem('labcode_name');
+  const role = localStorage.getItem('labcode_role');
+  const subjectName = localStorage.getItem('labcode_subject_name');
+  const subjectCode = localStorage.getItem('labcode_subject_code');
+  if (!user) window.location.href = 'login.html';
+  document.getElementById('user-badge').textContent = name || user;
+
+  // Show subject name in session info
+  if (subjectName) {
+    document.querySelector('.session-info').textContent = subjectCode + ' — ' + subjectName;
+    const subEls = document.querySelectorAll('.session-info-sub');
+    subEls.forEach(el => el.textContent = subjectCode + ' — ' + subjectName);
+  }
+
+  // ===== LOCK LANGUAGE TO WHAT THE SUBJECT REQUIRES =====
+  // Faculty decides the language for a subject when creating it (Admin → Subjects).
+  // Students should not be able to switch languages — the dropdown is hidden
+  // and replaced with a read-only badge showing the locked language.
+  const subjectLanguage = localStorage.getItem('labcode_subject_language');
+  const subjectId = localStorage.getItem('labcode_subject_id');
+  const sectionId = localStorage.getItem('labcode_section_id');
+
+  function forceLanguageLock(langName) {
+    if (!langName || langName === 'Any' || langName === 'null') {
+      // Unlock if it was previously locked (useful when switching between tasks in exams if we ever allow mixed locking)
+      const langSelect = document.getElementById('language');
+      langSelect.style.display = 'block';
+      const lockedBadge = document.getElementById('lang-locked');
+      if (lockedBadge) lockedBadge.style.display = 'none';
+      return;
+    }
+
+    const langSelect = document.getElementById('language');
+    const valueMap = {
+      'C': '50', 'C++': '54', 'Python': '71', 'Java': '62',
+      'JavaScript': '63', 'Frontend': 'frontend'
+    };
+    const targetValue = valueMap[langName];
+    if (targetValue) {
+      langSelect.value = targetValue;
+    }
+
+    langSelect.style.display = 'none';
+    const lockedBadge = document.getElementById('lang-locked');
+    const lockedText = document.getElementById('lang-locked-text');
+    if (lockedBadge && lockedText) {
+      lockedText.textContent = (langSelect.options && langSelect.options[langSelect.selectedIndex]) ? langSelect.options[langSelect.selectedIndex].text : langName;
+      lockedBadge.style.display = 'flex';
+    }
+
+    if (typeof onLanguageChange === 'function') onLanguageChange();
+  }
+
+  function lockLanguageToSubject() {
+    if (subjectId === 'exam') return; // Do not lock language for LAB Exam globally
+    forceLanguageLock(subjectLanguage);
+  }
+
+  // ===== SESSION HEARTBEAT (students only — keeps single-session lock alive) =====
+  const loginToken = localStorage.getItem('labcode_login_token');
+  if (role === 'student' && loginToken) {
+    async function sendHeartbeat() {
+      try {
+        const res = await fetch(SERVER + '/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usn: user, login_token: loginToken })
+        });
+        const data = await res.json();
+
+        // If faculty force-logged-out this student or blocked them, kick to login
+        if (data.kicked) {
+          sessionStorage.removeItem('labcode_fs_violations');
+          localStorage.clear();
+          window.location.href = 'login.html';
+          return;
+        }
+      } catch (e) {}
+    }
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 15000);
+
+    window.addEventListener('beforeunload', () => {
+      // Best-effort cleanup if the student closes the tab without using Sign Out
+      if (!isNavigating) {
+        navigator.sendBeacon(SERVER + '/session-logout', JSON.stringify({ usn: user }));
+      }
+    });
+  }
+
+  async function clearActiveSession() {
+    if (role === 'student') {
+      try {
+        await fetch(SERVER + '/session-logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usn: user })
+        });
+      } catch (e) {}
+    }
+  }
+
+  function logout() {
+    clearActiveSession().finally(() => {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    });
+  }
+
+  let isNavigating = false;
+  function goBack() {
+    isNavigating = true;
+    window.location.href = 'student-home.html';
+  }
+
+  // Program data
+  let programs = {};
+  let currentProgram = null;
+  let currentOriginalProgram = null;
+  let completedPrograms = new Set();
+  let observations = {};
+  let codeStore = {};
+  let stdinStore = {};
+
+  async function loadTasksFromServer() {
+    try {
+      const subjectId = localStorage.getItem('labcode_subject_id');
+      const sectionId = localStorage.getItem('labcode_section_id');
+      
+      let url = 'https://brjugcqaznpgvfbcpnxl.supabase.co/rest/v1/tasks?is_active=eq.true&order=created_at.asc';
+      if (subjectId === 'exam') {
+        url += `&program=like.EXAM_TASK_${sectionId}_*`;
+      } else if (subjectId) {
+        url += '&subject_id=eq.' + subjectId;
+      }
+      
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyanVnY3Fhem5wZ3ZmYmNwbnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjY3MDksImV4cCI6MjA5NzAwMjcwOX0.PHHcKuR0LLh-6YpEZwNPKcW9d7yL8BO-c9_z3oQYmHU';
+
+      const res = await fetch(url, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      });
+      
+      const rawTasks = await res.json();
+      const tasks = rawTasks.map(t => {
+        if (subjectId === 'exam' && t.program.startsWith(`EXAM_TASK_${sectionId}_`)) {
+          return { ...t, original_program: t.program, program: t.program.replace(`EXAM_TASK_${sectionId}_`, '') };
+        }
+        return { ...t, original_program: t.program };
+      });
+      
+      programs = {};
+      
+      const progListEl = document.getElementById('prog-list');
+      progListEl.innerHTML = '';
+      
+      if (tasks.length === 0) {
+        progListEl.innerHTML = '<div style="color:var(--text3); padding:10px; font-size:12px;">No active tasks for this subject.</div>';
+        return;
+      }
+
+      let firstProg = null;
+      let firstOriginalProg = null;
+      tasks.forEach((t, index) => {
+        programs[t.program] = {
+          title: t.title,
+          original_program: t.original_program,
+          language: t.language,
+          desc: t.description + (t.sample_input ? `<br><br><strong style="color:#cdd6f4">Sample Input:</strong><br>${t.sample_input}` : '') + (t.expected_output ? `<br><br><strong style="color:#cdd6f4">Expected Output:</strong><br>${t.expected_output}` : ''),
+          boilerplate_python: t.boilerplate_python || '',
+          boilerplate_c: t.boilerplate_c || '',
+          boilerplate_cpp: t.boilerplate_cpp || '',
+          boilerplate_java: t.boilerplate_java || '',
+          boilerplate_js: t.boilerplate_js || ''
+        };
+        
+        const isFirst = index === 0;
+        if (isFirst) {
+          firstProg = t.program;
+          firstOriginalProg = t.original_program;
+        }
+
+        progListEl.innerHTML += `
+          <div class="prog-item ${isFirst ? 'active' : ''}" onclick="switchProgram(this, '${t.program}')">
+            <span class="prog-icon">📄</span>
+            <span class="prog-name">${t.program}</span>
+            <span class="prog-dot ${isFirst ? 'dot-active' : 'dot-pending'}"></span>
+          </div>`;
+      });
+
+      // Load previous submissions to restore code
+      await loadPreviousSubmissions();
+
+      updateProgress();
+      if (firstProg) {
+        switchProgram(document.querySelector('.prog-item.active'), firstProg);
+      }
+
+    } catch (err) {
+      console.error("Failed to load tasks", err);
+    }
+  }
+
+  // Load the student's previous submissions from the server so code persists across logout
+  async function loadPreviousSubmissions() {
+    try {
+      const subjectId = localStorage.getItem('labcode_subject_id');
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyanVnY3Fhem5wZ3ZmYmNwbnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MjY3MDksImV4cCI6MjA5NzAwMjcwOX0.PHHcKuR0LLh-6YpEZwNPKcW9d7yL8BO-c9_z3oQYmHU';
+      let url = `https://brjugcqaznpgvfbcpnxl.supabase.co/rest/v1/submissions?usn=eq.${user}&order=submitted_at.desc`;
+      if (subjectId) url += `&subject_id=eq.${subjectId}`;
+
+      const res = await fetch(url, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      });
+      const submissions = await res.json();
+
+      // For each program, take the most recent submission's code (submissions are ordered desc)
+      const seen = new Set();
+      submissions.forEach(s => {
+        if (!seen.has(s.program)) {
+          seen.add(s.program);
+          codeStore[s.program] = s.code || '';
+          completedPrograms.add(s.program);
+          if (s.observation) observations[s.program] = s.observation;
+        }
+      });
+
+      // Update sidebar dots for completed programs
+      document.querySelectorAll('.prog-item').forEach(el => {
+        const progName = el.querySelector('.prog-name').textContent;
+        if (completedPrograms.has(progName)) {
+          el.querySelector('.prog-dot').className = 'prog-dot dot-done';
+        }
+      });
+      updateProgress();
+    } catch (err) {
+      console.error('Failed to load previous submissions', err);
+    }
+  }
+
+  // ===== SYNTAX HIGHLIGHTING ENGINE =====
+  function escapeForHighlight(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  const KEYWORDS = {
+    python: ['def','class','if','elif','else','for','while','return','import','from','as','try','except','finally','with','pass','break','continue','lambda','yield','None','True','False','and','or','not','in','is','global','nonlocal','raise','assert','del','async','await'],
+    c: ['int','float','double','char','void','if','else','for','while','do','return','struct','typedef','switch','case','break','continue','sizeof','static','const','unsigned','signed','long','short','include','define','enum','union','goto','default'],
+    cpp: ['int','float','double','char','void','if','else','for','while','do','return','class','struct','public','private','protected','virtual','new','delete','this','namespace','using','template','typename','const','static','try','catch','throw','include','define','bool','true','false','nullptr','auto','switch','case','break','continue'],
+    java: ['public','private','protected','class','interface','extends','implements','static','final','void','int','float','double','char','boolean','long','short','byte','if','else','for','while','do','return','new','this','super','try','catch','finally','throw','throws','import','package','switch','case','break','continue','true','false','null','enum','abstract'],
+    javascript: ['function','const','let','var','if','else','for','while','do','return','class','extends','new','this','try','catch','finally','throw','async','await','import','export','from','default','typeof','instanceof','switch','case','break','continue','true','false','null','undefined','of','in','yield','static','get','set'],
+  };
+
+  function highlightCode(code, lang) {
+    if (lang === 'html') {
+      let escaped = escapeForHighlight(code);
+      escaped = escaped
+        .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="tok-comment">$1</span>')
+        .replace(/(&lt;\/?)([a-zA-Z][a-zA-Z0-9-]*)/g, '$1<span class="tok-tag">$2</span>')
+        .replace(/([a-zA-Z-]+)(=)(&quot;[^&]*&quot;)/g, '<span class="tok-attr">$1</span>$2<span class="tok-string">$3</span>');
+      return escaped;
+    }
+    if (lang === 'css') {
+      let escaped = escapeForHighlight(code);
+      escaped = escaped
+        .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="tok-comment">$1</span>')
+        .replace(/([.#]?[a-zA-Z-]+)(\s*\{)/g, '<span class="tok-tag">$1</span>$2')
+        .replace(/([a-zA-Z-]+)(\s*:)/g, '<span class="tok-attr">$1</span>$2');
+      return escaped;
+    }
+
+    const kw = KEYWORDS[lang] || KEYWORDS.javascript;
+    const kwSet = new Set(kw);
+
+    // Single-pass tokenizer over the RAW (unescaped) source — never operate on
+    // already-HTML-escaped or already-wrapped text, so there is zero risk of
+    // a later rule matching text inside an earlier rule's inserted markup.
+    let out = '';
+    let i = 0;
+    const n = code.length;
+
+    while (i < n) {
+      const ch = code[i];
+
+      // Line comment // or #
+      if ((ch === '/' && code[i+1] === '/') || (ch === '#' && lang === 'python')) {
+        let j = i;
+        while (j < n && code[j] !== '\n') j++;
+        out += '<span class="tok-comment">' + escapeForHighlight(code.slice(i, j)) + '</span>';
+        i = j;
+        continue;
+      }
+
+      // Block comment /* ... */
+      if (ch === '/' && code[i+1] === '*') {
+        let j = i + 2;
+        while (j < n && !(code[j] === '*' && code[j+1] === '/')) j++;
+        j = Math.min(j + 2, n);
+        out += '<span class="tok-comment">' + escapeForHighlight(code.slice(i, j)) + '</span>';
+        i = j;
+        continue;
+      }
+
+      // String literal " or '
+      if (ch === '"' || ch === "'") {
+        const quote = ch;
+        let j = i + 1;
+        while (j < n && code[j] !== quote) {
+          if (code[j] === '\\') j++;
+          j++;
+        }
+        j = Math.min(j + 1, n);
+        out += '<span class="tok-string">' + escapeForHighlight(code.slice(i, j)) + '</span>';
+        i = j;
+        continue;
+      }
+
+      // Number
+      if (/[0-9]/.test(ch)) {
+        let j = i;
+        while (j < n && /[0-9.]/.test(code[j])) j++;
+        out += '<span class="tok-number">' + escapeForHighlight(code.slice(i, j)) + '</span>';
+        i = j;
+        continue;
+      }
+
+      // Identifier / keyword / function call
+      if (/[a-zA-Z_]/.test(ch)) {
+        let j = i;
+        while (j < n && /[a-zA-Z0-9_]/.test(code[j])) j++;
+        const word = code.slice(i, j);
+        if (kwSet.has(word)) {
+          out += '<span class="tok-keyword">' + escapeForHighlight(word) + '</span>';
+        } else {
+          // Look ahead (skipping spaces) for '(' to treat as function call
+          let k = j;
+          while (k < n && code[k] === ' ') k++;
+          if (code[k] === '(') {
+            out += '<span class="tok-function">' + escapeForHighlight(word) + '</span>';
+          } else {
+            out += escapeForHighlight(word);
+          }
+        }
+        i = j;
+        continue;
+      }
+
+      // Default: copy one character, escaped
+      out += escapeForHighlight(ch);
+      i++;
+    }
+
+    return out;
+  }
+
+  function langKeyFromSelect() {
+    const sel = document.getElementById('language');
+    const text = (sel.options && sel.options[sel.selectedIndex]) ? sel.options[sel.selectedIndex].text.toLowerCase() : '';
+    if (text.includes('python')) return 'python';
+    if (text.includes('c++')) return 'cpp';
+    if (text.includes('java') && !text.includes('script')) return 'java';
+    if (text.includes('javascript')) return 'javascript';
+    if (text.includes('c')) return 'c';
+    return 'python';
+  }
+
+  // ===== LINE NUMBERS + HIGHLIGHT + SCROLL SYNC (generic, reusable for all 4 editors) =====
+  function setupEditor(textareaId, lineNumId, highlightId, langGetter) {
+    const ta = document.getElementById(textareaId);
+    const lineNumEl = document.getElementById(lineNumId);
+    const highlightEl = document.getElementById(highlightId);
+    if (!ta || !lineNumEl || !highlightEl) return;
+
+    function render() {
+      const lines = ta.value.split('\n').length;
+      lineNumEl.textContent = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+      const lang = langGetter();
+      highlightEl.innerHTML = highlightCode(ta.value, lang) + '\n';
+      syncScroll();
+    }
+    function syncScroll() {
+      lineNumEl.scrollTop = ta.scrollTop;
+      highlightEl.scrollTop = ta.scrollTop;
+      highlightEl.scrollLeft = ta.scrollLeft;
+    }
+    ta.addEventListener('input', render);
+    ta.addEventListener('scroll', syncScroll);
+    render();
+    return render;
+  }
+
+  // Line numbers (legacy hook kept so existing calls elsewhere don't break)
+  const codeEl = document.getElementById('code');
+  const renderMainEditor = setupEditor('code', 'line-numbers', 'code-highlight', langKeyFromSelect);
+  function updateLineNumbers() {
+    if (renderMainEditor) renderMainEditor();
+  }
+  updateLineNumbers();
+
+  // ===== SMART EDITOR FEATURES (Auto-indent, Auto-brackets) =====
+  function attachSmartEditor(el, updateCb) {
+    el.addEventListener('keydown', e => {
+      // Tab
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const s = el.selectionStart;
+        el.value = el.value.substring(0, s) + '    ' + el.value.substring(el.selectionEnd);
+        el.selectionStart = el.selectionEnd = s + 4;
+        if (updateCb) updateCb();
+        return;
+      }
+      
+      // Enter (Auto-indent)
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const s = el.selectionStart;
+        const textBefore = el.value.substring(0, s);
+        const textAfter = el.value.substring(el.selectionEnd);
+        const lines = textBefore.split('\n');
+        const lastLine = lines[lines.length - 1];
+        const match = lastLine.match(/^(\s*)/);
+        let indent = match ? match[1] : '';
+        
+        const lastChar = textBefore.trim().slice(-1);
+        const isBlockOpen = lastChar === '{' || lastChar === '[' || lastChar === '(' || lastChar === ':';
+        if (isBlockOpen) indent += '    ';
+        
+        const firstCharAfter = textAfter.trim()[0];
+        if (isBlockOpen && ((lastChar === '{' && firstCharAfter === '}') || (lastChar === '[' && firstCharAfter === ']') || (lastChar === '(' && firstCharAfter === ')'))) {
+          const out = '\n' + indent + '\n' + indent.substring(4);
+          el.value = textBefore + out + textAfter;
+          el.selectionStart = el.selectionEnd = s + indent.length + 1;
+        } else {
+          el.value = textBefore + '\n' + indent + textAfter;
+          el.selectionStart = el.selectionEnd = s + indent.length + 1;
+        }
+        if (updateCb) updateCb();
+        return;
+      }
+
+      // Auto-closing brackets & quotes
+      const pairs = { '(': ')', '{': '}', '[': ']', '"': '"', "'": "'" };
+      if (pairs[e.key]) {
+        const s = el.selectionStart;
+        const textAfter = el.value.substring(el.selectionEnd);
+        const nextChar = textAfter.length > 0 ? textAfter[0] : ' ';
+        // Only auto-close if the next character is whitespace or a closing bracket
+        if (/[ \n\t)}\]]/.test(nextChar) || !nextChar) {
+          e.preventDefault();
+          el.value = el.value.substring(0, s) + e.key + pairs[e.key] + textAfter;
+          el.selectionStart = el.selectionEnd = s + 1;
+          if (updateCb) updateCb();
+          return;
+        }
+      }
+
+      // Skip over closing brackets if they already exist
+      if (e.key === ')' || e.key === '}' || e.key === ']' || e.key === '"' || e.key === "'") {
+        if (el.value.substring(el.selectionStart, el.selectionStart + 1) === e.key) {
+          e.preventDefault();
+          el.selectionStart = el.selectionEnd = el.selectionStart + 1;
+          return;
+        }
+      }
+
+      // Backspace (Delete empty pair)
+      if (e.key === 'Backspace' && el.selectionStart === el.selectionEnd) {
+        const s = el.selectionStart;
+        if (s > 0 && s < el.value.length) {
+          const prev = el.value[s - 1];
+          const next = el.value[s];
+          if ((prev === '(' && next === ')') || (prev === '{' && next === '}') || (prev === '[' && next === ']') || (prev === '"' && next === '"') || (prev === "'" && next === "'")) {
+            e.preventDefault();
+            el.value = el.value.substring(0, s - 1) + el.value.substring(s + 1);
+            el.selectionStart = el.selectionEnd = s - 1;
+            if (updateCb) updateCb();
+            return;
+          }
+        }
+      }
+    });
+  }
+
+  attachSmartEditor(codeEl, updateLineNumbers);
+
+  // Paste control — checks server setting
+  let pasteAllowed = false;
+  let fullscreenRequired = false;
+  let fsViolationCount = parseInt(sessionStorage.getItem('labcode_fs_violations') || '0');
+  const MAX_FS_VIOLATIONS = 4;
+
+  function enforceFullscreen() {
+    if (fullscreenRequired && !document.fullscreenElement) {
+      try { document.documentElement.requestFullscreen().catch(e => {}); } catch(e){}
+    }
+  }
+
+  // ===== REPORT VIOLATION TO SERVER (for faculty dashboard notifications) =====
+  function reportViolation(type, message) {
+    try {
+      fetch(SERVER + '/report-violation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usn: user, name: name, type, message })
+      }).catch(() => {});
+    } catch (e) {}
+  }
+
+  // Fullscreen exit detection — show warning modal and track violations
+  document.addEventListener('fullscreenchange', () => {
+    if (!fullscreenRequired) return;
+    if (!document.fullscreenElement) {
+      // Student exited fullscreen while exam mode is ON
+      fsViolationCount++;
+      sessionStorage.setItem('labcode_fs_violations', fsViolationCount);
+
+      if (fsViolationCount >= MAX_FS_VIOLATIONS) {
+        // Auto-block: call server to block login for 1 hour, then kick out
+        autoBlockStudent();
+        return;
+      }
+
+      // Show violation modal
+      const overlay = document.getElementById('proctor-overlay');
+      const countEl = document.getElementById('proctor-count');
+      if (countEl) countEl.textContent = `Violation ${fsViolationCount} of ${MAX_FS_VIOLATIONS} — ${MAX_FS_VIOLATIONS - fsViolationCount} remaining before auto-block`;
+      if (overlay) overlay.style.display = 'flex';
+
+      // Report to server for faculty notifications
+      reportViolation('fullscreen_exit', `${name || user} exited fullscreen mode (violation ${fsViolationCount}/${MAX_FS_VIOLATIONS})`);
+    }
+  });
+
+  function reEnterFullscreen() {
+    const overlay = document.getElementById('proctor-overlay');
+    if (overlay) overlay.style.display = 'none';
+    try { document.documentElement.requestFullscreen().catch(e => {}); } catch(e){}
+  }
+
+  // ===== ESC KEY INTERCEPT — prevent default fullscreen exit =====
+  document.addEventListener('keydown', (e) => {
+    if (!fullscreenRequired) return;
+    if (e.key === 'Escape') {
+      // Block the browser's default behavior of exiting fullscreen
+      e.preventDefault();
+      e.stopPropagation();
+      // Re-enforce fullscreen in case some browsers ignore preventDefault
+      setTimeout(() => {
+        if (!document.fullscreenElement && fullscreenRequired) {
+          enforceFullscreen();
+        }
+      }, 100);
+    }
+    // Also block Alt+Tab, Alt+F4, and Windows key as much as the browser allows
+    if (e.altKey && (e.key === 'Tab' || e.key === 'F4')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (e.key === 'Meta' || e.key === 'OS') {
+      e.preventDefault();
+    }
+  }, true); // 'true' for capture phase — catches it before any other handler
+
+  // ===== ALT+TAB / WINDOW BLUR DETECTION =====
+  // Fires when the student switches to another application
+  let _blurViolationCooldown = false;
+  window.addEventListener('blur', () => {
+    if (!fullscreenRequired) return;
+    if (_blurViolationCooldown) return; // Prevent double-counting from blur + visibilitychange
+    _blurViolationCooldown = true;
+    setTimeout(() => { _blurViolationCooldown = false; }, 1500);
+
+    fsViolationCount++;
+    sessionStorage.setItem('labcode_fs_violations', fsViolationCount);
+
+    if (fsViolationCount >= MAX_FS_VIOLATIONS) {
+      autoBlockStudent();
+      return;
+    }
+
+    // Show violation modal
+    const overlay = document.getElementById('proctor-overlay');
+    const countEl = document.getElementById('proctor-count');
+    const proctorText = overlay ? overlay.querySelector('.proctor-text') : null;
+    if (proctorText) proctorText.textContent = 'You switched away from the exam window. Alt+Tab and window switching are not allowed during the test.';
+    if (countEl) countEl.textContent = `Violation ${fsViolationCount} of ${MAX_FS_VIOLATIONS} — ${MAX_FS_VIOLATIONS - fsViolationCount} remaining before auto-block`;
+    if (overlay) overlay.style.display = 'flex';
+
+    // Report to server for faculty notifications
+    reportViolation('alt_tab', `${name || user} switched away from exam window (violation ${fsViolationCount}/${MAX_FS_VIOLATIONS})`);
+  });
+
+  // ===== TAB VISIBILITY CHANGE DETECTION =====
+  // Fires when the student switches browser tabs
+  document.addEventListener('visibilitychange', () => {
+    if (!fullscreenRequired) return;
+    if (document.hidden) {
+      if (_blurViolationCooldown) return; // Already counted by blur handler
+      _blurViolationCooldown = true;
+      setTimeout(() => { _blurViolationCooldown = false; }, 1500);
+
+      fsViolationCount++;
+      sessionStorage.setItem('labcode_fs_violations', fsViolationCount);
+
+      if (fsViolationCount >= MAX_FS_VIOLATIONS) {
+        autoBlockStudent();
+        return;
+      }
+
+      const overlay = document.getElementById('proctor-overlay');
+      const countEl = document.getElementById('proctor-count');
+      const proctorText = overlay ? overlay.querySelector('.proctor-text') : null;
+      if (proctorText) proctorText.textContent = 'You switched to another browser tab. Tab switching is not allowed during the test.';
+      if (countEl) countEl.textContent = `Violation ${fsViolationCount} of ${MAX_FS_VIOLATIONS} — ${MAX_FS_VIOLATIONS - fsViolationCount} remaining before auto-block`;
+      if (overlay) overlay.style.display = 'flex';
+
+      // Report to server for faculty notifications
+      reportViolation('tab_switch', `${name || user} switched to another browser tab (violation ${fsViolationCount}/${MAX_FS_VIOLATIONS})`);
+    } else {
+      // Student came back — re-enforce fullscreen
+      enforceFullscreen();
+    }
+  });
+
+  async function autoBlockStudent() {
+    const overlay = document.getElementById('proctor-overlay');
+    const countEl = document.getElementById('proctor-count');
+    if (countEl) countEl.textContent = `Maximum violations reached. You have been blocked for 1 hour.`;
+    if (overlay) overlay.style.display = 'flex';
+
+    // Disable the re-enter button
+    const btn = overlay ? overlay.querySelector('.proctor-btn') : null;
+    if (btn) {
+      btn.textContent = 'Blocked — Redirecting...';
+      btn.disabled = true;
+      btn.style.background = '#ef4444';
+      btn.style.cursor = 'not-allowed';
+    }
+
+    try {
+      await fetch(SERVER + '/block-login/' + user, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ minutes: 60 })
+      });
+    } catch (e) {}
+
+    // Clear session and redirect after a short delay
+    sessionStorage.removeItem('labcode_fs_violations');
+    setTimeout(() => {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }, 3000);
+  }
+
+  async function checkPasteSetting() {
+    const subjectId = localStorage.getItem('labcode_subject_id');
+    const sectionId = localStorage.getItem('labcode_section_id');
+    if (!subjectId) return;
+    try {
+      const targetId = subjectId === 'exam' ? `exam_${sectionId}` : subjectId;
+      const res = await fetch(SERVER + '/subject-settings/' + targetId);
+      const data = await res.json();
+      
+      // Default stricter rules for exams if no settings exist
+      if (subjectId === 'exam' && Object.keys(data).length === 0) {
+        pasteAllowed = false;
+        fullscreenRequired = true;
+      } else {
+        pasteAllowed = data.paste_enabled === true;
+        fullscreenRequired = data.fullscreen_lock === true;
+      }
+      
+      enforceFullscreen();
+      
+      const warn = document.querySelector('.paste-warn');
+      if (warn) {
+        warn.textContent = pasteAllowed ? '✓ Paste enabled' : 'Paste disabled';
+        warn.style.background = pasteAllowed ? '#1a2e1a' : '#2a1a1a';
+        warn.style.borderColor = pasteAllowed ? '#2d5a2d' : '#614030';
+        warn.style.color = pasteAllowed ? '#a6e3a1' : '#fab387';
+      }
+    } catch (e) {}
+  }
+
+  codeEl.addEventListener('paste', e => {
+    if (!pasteAllowed) {
+      e.preventDefault();
+      const toast = document.getElementById('toast');
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 2000);
+    }
+  });
+  
+  codeEl.addEventListener('contextmenu', e => {
+    if (!pasteAllowed) e.preventDefault();
+  });
+
+  // Stdin input box — input values aren't "code", so paste is always allowed
+  // here even in exam mode (students just need to type test data, not solutions)
+
+  // Check paste setting on load and every 10 seconds
+  checkPasteSetting();
+  setInterval(checkPasteSetting, 10000);
+
+  // Real session info — actual day, live clock, real subject name
+  function updateSessionInfo() {
+    const now = new Date();
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const subjectName = localStorage.getItem('labcode_subject_name') || 'Lab Session';
+
+    const labNameEl = document.getElementById('lab-name');
+    const labSubEl = document.getElementById('lab-sub');
+    if (labNameEl) labNameEl.textContent = dayName + ' Lab';
+    if (labSubEl) labSubEl.textContent = subjectName + ' · ' + timeStr;
+  }
+  updateSessionInfo();
+  setInterval(updateSessionInfo, 30000);
+
+  // FRONTEND EDITOR
+  let currentFETab = 'html';
+
+  const feDefaultHTML = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>My Page</title>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n  <h1>Hello from LabCode!</h1>\n  <p>Edit HTML, CSS and JS separately.</p>\n  <button onclick="greet()">Click me</button>\n  <script src="script.js"><\/script>\n</body>\n</html>`;
+
+  const feDefaultCSS = `body {\n  font-family: Arial, sans-serif;\n  background: #f0f4ff;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  height: 100vh;\n  margin: 0;\n}\n\nh1 {\n  color: #1B3A6B;\n}\n\nbutton {\n  background: #E87722;\n  color: white;\n  border: none;\n  padding: 10px 24px;\n  border-radius: 6px;\n  font-size: 14px;\n  cursor: pointer;\n  margin-top: 12px;\n}`;
+
+  const feDefaultJS = `function greet() {\n  alert('Hello from LabCode Frontend Editor!');\n}`;
+
+  function switchFETab(tab) {
+    currentFETab = tab;
+    ['html', 'css', 'js'].forEach(t => {
+      document.getElementById('fe-' + t + '-tab').style.color = t === tab ? '#cdd6f4' : '#45475a';
+      document.getElementById('fe-' + t + '-tab').style.borderBottomColor = t === tab ? '#E87722' : 'transparent';
+      document.getElementById('fe-' + t + '-editor').style.display = t === tab ? 'flex' : 'none';
+    });
+  }
+
+  let feRenderers = {};
+
+  function updateFELineNums(type) {
+    if (!feRenderers[type]) {
+      const langMap = { html: 'html', css: 'css', js: 'javascript' };
+      feRenderers[type] = setupEditor('fe-' + type, 'fe-' + type + '-nums', 'fe-' + type + '-highlight', () => langMap[type]);
+    } else {
+      feRenderers[type]();
+    }
+  }
+
+  function handleFEPaste(e) {
+    if (!pasteAllowed) e.preventDefault();
+  }
+
+  function runFrontend() {
+    const html = document.getElementById('fe-html').value;
+    const css = document.getElementById('fe-css').value;
+    const js = document.getElementById('fe-js').value;
+
+    const combined = html
+      .replace('</head>', `<style>${css}</style></head>`)
+      .replace('</body>', `<script>${js}<\/script></body>`);
+
+    document.getElementById('fe-preview').srcdoc = combined;
+    document.getElementById('output').textContent = '✓ Frontend rendered in preview panel.';
+    document.getElementById('status').textContent = '✓ Preview updated';
+  }
+
+  function initFrontendEditor() {
+    document.getElementById('fe-html').value = feDefaultHTML;
+    document.getElementById('fe-css').value = feDefaultCSS;
+    document.getElementById('fe-js').value = feDefaultJS;
+    updateFELineNums('html');
+    updateFELineNums('css');
+    updateFELineNums('js');
+    runFrontend();
+
+    // Attach smart editor if not attached
+    if (!window.feSmartEditorAttached) {
+      attachSmartEditor(document.getElementById('fe-html'), () => updateFELineNums('html'));
+      attachSmartEditor(document.getElementById('fe-css'), () => updateFELineNums('css'));
+      attachSmartEditor(document.getElementById('fe-js'), () => updateFELineNums('js'));
+      window.feSmartEditorAttached = true;
+    }
+  }
+
+  function onLanguageChange() {
+    const lang = document.getElementById('language').value;
+    const previewBtn = document.getElementById('preview-btn');
+    const runBtn = document.getElementById('run-btn');
+    const editorTab = document.getElementById('tab-editor');
+    const frontendTab = document.getElementById('tab-frontend');
+    const problemTab = document.getElementById('tab-problem');
+    const obsTab = document.getElementById('tab-observation');
+
+    // Always reset all panels first
+    if(editorTab) editorTab.style.display = 'none';
+    if(frontendTab) frontendTab.style.display = 'none';
+    if(problemTab) problemTab.style.display = 'none';
+    if(obsTab) obsTab.style.display = 'none';
+
+    if (lang === 'frontend') {
+      if(frontendTab) frontendTab.style.display = 'flex';
+      if(runBtn) runBtn.style.display = 'none';
+      if(previewBtn) previewBtn.style.display = 'none';
+      initFrontendEditor();
+    } else {
+      if(editorTab) editorTab.style.display = 'flex';
+      if(runBtn) {
+        runBtn.style.display = 'flex';
+        runBtn.textContent = '▶ Run';
+      }
+
+      if (lang === 'html') {
+        if(previewBtn) previewBtn.style.display = 'flex';
+        runBtn.textContent = '▶ Run & Preview';
+      } else {
+        if(previewBtn) previewBtn.style.display = 'none';
+      }
+
+      if (lang === 'html' && !codeEl.value.trim()) {
+        codeEl.value = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>My Page</title>\n</head>\n<body>\n  <h1>Hello from LabCode!</h1>\n</body>\n</html>`;
+      }
+      updateLineNumbers();
+    }
+  }
+
+  function showPreview() {
+    const code = codeEl.value;
+    const frame = document.getElementById('preview-frame');
+    frame.srcdoc = code;
+    document.getElementById('preview-modal').style.display = 'flex';
+  }
+
+  function closePreview() {
+    document.getElementById('preview-modal').style.display = 'none';
+    document.getElementById('preview-frame').srcdoc = '';
+  }
+
+  // Get the boilerplate code for a program based on the current language
+  function getBoilerplate(progId) {
+    const prog = programs[progId];
+    if (!prog) return '';
+    const langValue = document.getElementById('language').value;
+    const boilerplateMap = {
+      '71': prog.boilerplate_python,
+      '50': prog.boilerplate_c,
+      '54': prog.boilerplate_cpp,
+      '62': prog.boilerplate_java,
+      '63': prog.boilerplate_js
+    };
+    return boilerplateMap[langValue] || '';
+  }
+
+  // Switch program
+  function switchProgram(el, progId) {
+    if(!el || !progId) return;
+
+    // Save current code and queued (but not yet run) input
+    if (currentProgram) {
+      codeStore[currentProgram] = codeEl.value;
+      stdinStore[currentProgram] = [...inputQueue];
+    }
+
+    // Update sidebar active state
+    document.querySelectorAll('.prog-item').forEach(i => {
+      i.classList.remove('active');
+      if (!completedPrograms.has(i.querySelector('.prog-name').textContent)) {
+        i.querySelector('.prog-dot').className = 'prog-dot dot-pending';
+      }
+    });
+    el.classList.add('active');
+    if (completedPrograms.has(progId)) {
+      el.querySelector('.prog-dot').className = 'prog-dot dot-done';
+    } else {
+      el.querySelector('.prog-dot').className = 'prog-dot dot-active';
+    }
+
+    currentProgram = progId;
+    currentOriginalProgram = programs[progId] ? programs[progId].original_program : progId;
+    const prog = programs[progId];
+
+    // If it's an exam, lock the language to this specific task's language FIRST
+    if (localStorage.getItem('labcode_subject_id') === 'exam' && prog && prog.language) {
+      forceLanguageLock(prog.language);
+    }
+
+    // Load saved code, or fall back to boilerplate for the current language
+    if (codeStore[progId]) {
+      codeEl.value = codeStore[progId];
+    } else {
+      codeEl.value = getBoilerplate(progId);
+    }
+    updateLineNumbers();
+
+    // Load saved queued input or clear
+    inputQueue = stdinStore[progId] ? [...stdinStore[progId]] : [];
+    document.getElementById('stdin-input').value = '';
+    updateQueueBadge();
+
+    // Update problem tab
+    if (prog) {
+      document.getElementById('problem-title').textContent = progId + ' — ' + prog.title;
+      document.getElementById('problem-desc').innerHTML = prog.desc;
+    }
+
+    // Update observation tab
+    document.getElementById('obs-prog-title').textContent = 'Observation — ' + progId;
+    document.getElementById('obs-text').value = observations[progId] || '';
+    document.getElementById('obs-auto').textContent = '';
+
+    // Clear output and errors for the newly selected program
+    document.getElementById('output').innerHTML = '<span class="sys">// Click Run to start. If your program asks for input, type it in the bar below before running, then watch it play out here like a real terminal session.</span>';
+    document.getElementById('panel-errors').innerHTML = '<span style="color:var(--text4);">// Compile/runtime errors will appear here after you run</span>';
+    switchPanelTab('output');
+    document.getElementById('status').textContent = 'Ready';
+
+    // Go to editor tab
+    switchTab(document.querySelector('.editor-tab'), 'editor');
+  }
+
+  // Switch tab
+  function switchTab(el, tab) {
+    document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+
+    const lang = document.getElementById('language').value;
+    const isFrontend = lang === 'frontend';
+
+    document.getElementById('tab-editor').style.display = (tab === 'editor' && !isFrontend) ? 'flex' : 'none';
+    document.getElementById('tab-frontend').style.display = (tab === 'editor' && isFrontend) ? 'flex' : 'none';
+    document.getElementById('tab-problem').style.display = tab === 'problem' ? 'block' : 'none';
+    document.getElementById('tab-observation').style.display = tab === 'observation' ? 'block' : 'none';
+
+    if (tab === 'editor' && isFrontend) initFrontendEditor();
+  }
+
+  // Save observation
+  async function saveObservation() {
+    const obsText = document.getElementById('obs-text').value;
+    observations[currentProgram] = obsText;
+
+    // Find the latest submission ID for this program
+    try {
+      const res = await fetch(SERVER + '/submissions/' + user);
+      const data = await res.json();
+      const progSubs = data.filter(s => s.program === currentProgram);
+      if (progSubs.length > 0) {
+        const latest = progSubs[progSubs.length - 1];
+        await fetch(SERVER + '/observation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: latest.id, observation: obsText })
+        });
+      }
+    } catch (err) {
+      console.log('Could not save observation to server');
+    }
+
+    document.getElementById('obs-auto').textContent = '✓ Observation saved successfully';
+  }
+
+  // Update progress bar
+  function updateProgress() {
+    const total = Object.keys(programs).length;
+    const count = completedPrograms.size;
+    document.getElementById('progress-text').textContent = count + ' / ' + total;
+    if (total > 0) {
+      document.getElementById('progress-fill').style.width = (count / total * 100) + '%';
+    }
+  }
+
+  // ===== TERMINAL-STYLE INPUT QUEUE =====
+  // Judge0 can't pause mid-execution, so we can't have a truly live terminal.
+  // Instead: student types one value at a time into the command-line bar,
+  // hits Enter to "queue" it (shown as a chip count), then clicking Run sends
+  // all queued values as stdin and replays the whole session — prompts and
+  // typed answers interleaved — in the terminal box, so it *feels* like a
+  // real back-and-forth even though it technically ran in one shot.
+  let inputQueue = [];
+
+  function switchPanelTab(tab) {
+    ['output', 'errors'].forEach(t => {
+      document.getElementById('panel-tab-' + t).classList.toggle('active', t === tab);
+    });
+    document.getElementById('panel-output').style.display = tab === 'output' ? 'flex' : 'none';
+    document.getElementById('panel-errors').style.display = tab === 'errors' ? 'block' : 'none';
+  }
+
+  function updateQueueBadge() {
+    const badge = document.getElementById('queued-count');
+    if (inputQueue.length > 0) {
+      badge.style.display = 'block';
+      badge.textContent = inputQueue.length + ' queued';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function onStdinKeyChange() {
+    // no-op placeholder kept for the oninput hook; queueing happens on Enter
+  }
+
+  function onStdinKeyDown(e) {
+    const field = document.getElementById('stdin-input');
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = field.value;
+      if (val.trim() !== '') {
+        inputQueue.push(val);
+        // Echo it into the terminal immediately so it looks like a live type-and-enter
+        const out = document.getElementById('output');
+        const line = document.createElement('div');
+        line.innerHTML = '<span style="color:var(--accent);">❯ </span>' + escapeHtmlForTerminal(val);
+        out.appendChild(line);
+        out.scrollTop = out.scrollHeight;
+      }
+      field.value = '';
+      updateQueueBadge();
+    } else if (e.key === 'Backspace' && field.value === '' && inputQueue.length > 0) {
+      // Backspace on an empty field pops the last queued item — easy undo
+      inputQueue.pop();
+      updateQueueBadge();
+    }
+  }
+
+  function escapeHtmlForTerminal(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function clearInputQueue() {
+    inputQueue = [];
+    updateQueueBadge();
+  }
+
+  function getCleanStdin() {
+    if (!inputQueue.length) return '';
+    return inputQueue.join('\n') + '\n';
+  }
+
+  async function runCode() {
+    if (!currentProgram) return;
+
+    const code = codeEl.value;
+    const langValue = document.getElementById('language').value;
+    const language = document.getElementById('language').selectedOptions[0].text;
+    const btn = document.getElementById('run-btn');
+
+    if (langValue === 'frontend') {
+      runFrontend();
+      // Save combined code as submission
+      const html = document.getElementById('fe-html').value;
+      const css = document.getElementById('fe-css').value;
+      const js = document.getElementById('fe-js').value;
+      const combined = `/* HTML */\n${html}\n\n/* CSS */\n${css}\n\n/* JS */\n${js}`;
+      try {
+        await fetch(SERVER + '/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: combined, language_id: 0, language: 'Frontend',
+            usn: user, program: currentOriginalProgram,
+            subject_id: localStorage.getItem('labcode_subject_id') === 'exam' ? null : (localStorage.getItem('labcode_subject_id') || null)
+          })
+        });
+
+        // Auto generate observation for Frontend
+        const prog = programs[currentProgram];
+        const obsText = `Program: ${prog ? prog.title : currentProgram}. Language: Frontend. The code was rendered successfully on ${new Date().toLocaleDateString()} during IS Lab session at MITE.`;
+        document.getElementById('obs-text').value = obsText;
+        document.getElementById('obs-auto').textContent = '✓ Observation auto-generated — review and save it';
+        observations[currentProgram] = obsText;
+
+        completedPrograms.add(currentProgram);
+        document.querySelector('.prog-item.active .prog-dot').className = 'prog-dot dot-done';
+        updateProgress();
+
+      } catch (e) {}
+      return;
+    }
+
+    // Handle HTML separately
+    if (langValue === 'html') {
+      showPreview();
+      document.getElementById('output').textContent = '✓ HTML rendered in preview window.';
+      document.getElementById('status').textContent = '✓ Preview opened';
+
+      // Save HTML submission
+      try {
+        await fetch(SERVER + '/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code, language_id: 0, language: 'HTML/CSS',
+            usn: user, program: currentOriginalProgram,
+            subject_id: localStorage.getItem('labcode_subject_id') === 'exam' ? null : (localStorage.getItem('labcode_subject_id') || null)
+          })
+        });
+
+        // Auto generate observation for HTML
+        const prog = programs[currentProgram];
+        const obsText = `Program: ${prog ? prog.title : currentProgram}. Language: HTML/CSS. The code was rendered successfully on ${new Date().toLocaleDateString()} during IS Lab session at MITE.`;
+        document.getElementById('obs-text').value = obsText;
+        document.getElementById('obs-auto').textContent = '✓ Observation auto-generated — review and save it';
+        observations[currentProgram] = obsText;
+
+        completedPrograms.add(currentProgram);
+        document.querySelector('.prog-item.active .prog-dot').className = 'prog-dot dot-done';
+        updateProgress();
+      } catch (e) {}
+      return;
+    }
+
+    const language_id = parseInt(langValue);
+    const stdin = getCleanStdin();
+
+    // Detect common input-reading patterns so we can warn before running with empty input
+    const needsInputPatterns = [/scanf\s*\(/, /cin\s*>>/, /input\s*\(/, /Scanner\s*\(/, /\.nextInt\s*\(/, /\.nextLine\s*\(/, /\.next\s*\(/, /readline\s*\(/i];
+    const looksLikeItNeedsInput = needsInputPatterns.some(p => p.test(code));
+    if (looksLikeItNeedsInput && !stdin.trim()) {
+      const proceed = confirm('Your program looks like it reads input (scanf/cin/input/Scanner), but you haven\'t typed any input values yet.\n\nClick OK to run anyway, or Cancel to type your input first (use the ❯ bar at the bottom of the terminal, press Enter after each value).');
+      if (!proceed) {
+        document.getElementById('stdin-input').focus();
+        return;
+      }
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Running...';
+    document.getElementById('status').textContent = 'Executing...';
+    switchPanelTab('output');
+
+    const outEl = document.getElementById('output');
+    outEl.innerHTML = '<span class="sys">$ Running ' + currentProgram + '...</span>';
+
+    try {
+      const res = await fetch(SERVER + '/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          code, language_id, language, usn: user, 
+          program: currentOriginalProgram,
+          subject_id: localStorage.getItem('labcode_subject_id') === 'exam' ? null : (localStorage.getItem('labcode_subject_id') || null),
+          stdin
+        })
+      });
+      const data = await res.json();
+
+      // Build a terminal-style transcript: the inputs were already echoed
+      // live into the box as the student typed and hit Enter (see
+      // onStdinKeyDown), so here we just append the program's actual output
+      // right after, making the whole thing read like one continuous session.
+      const sysLine = document.createElement('div');
+      sysLine.innerHTML = '<span class="sys">$ Running ' + currentProgram + '...</span>';
+      const outputLine = document.createElement('pre');
+      outputLine.style.margin = '6px 0 0 0';
+      outputLine.style.whiteSpace = 'pre-wrap';
+      outputLine.style.fontFamily = 'inherit';
+      outputLine.textContent = data.output;
+
+      outEl.appendChild(outputLine);
+      outEl.scrollTop = outEl.scrollHeight;
+
+      document.getElementById('status').textContent = '✓ ' + data.status + ' · Saved';
+
+      // If it looks like an error/runtime failure, also surface it in the Errors tab
+      const errorsPanel = document.getElementById('panel-errors');
+      const looksLikeError = data.status && !data.status.toLowerCase().includes('accepted') && !data.status.toLowerCase().includes('success');
+      if (looksLikeError) {
+        errorsPanel.textContent = data.output;
+      } else {
+        errorsPanel.innerHTML = '<span style="color:var(--text4);">// No errors — last run finished cleanly</span>';
+      }
+
+      // Auto generate observation
+      const prog = programs[currentProgram];
+      const obsText = `Program: ${prog ? prog.title : currentProgram}. Language: ${language}. The program was executed successfully on ${new Date().toLocaleDateString()} during IS Lab session at MITE. Output: ${data.output.trim().substring(0, 80)}`;
+      document.getElementById('obs-text').value = obsText;
+      document.getElementById('obs-auto').textContent = '✓ Observation auto-generated — review and save it';
+      observations[currentProgram] = obsText;
+
+      // Mark as completed
+      completedPrograms.add(currentProgram);
+      document.querySelector('.prog-item.active .prog-dot').className = 'prog-dot dot-done';
+      updateProgress();
+
+    } catch (err) {
+      const errLine = document.createElement('div');
+      errLine.innerHTML = '<span class="err">Error: Could not reach server.</span>';
+      outEl.appendChild(errLine);
+      document.getElementById('status').textContent = 'Error';
+    }
+
+    clearInputQueue();
+    btn.disabled = false;
+    let currentLangValue = document.getElementById('language').value;
+    btn.textContent = currentLangValue === 'html' ? '▶ Run & Preview' : '▶ Run';
+  }
+
+  // Export PDF
+  function exportPDF() {
+    const subject = localStorage.getItem('labcode_subject_name') || 'Lab';
+    const subjectId = localStorage.getItem('labcode_subject_id');
+    let url = SERVER + '/export/' + user + '?subject=' + encodeURIComponent(subject);
+    if (subjectId) url += '&subject_id=' + subjectId;
+    window.open(url, '_blank');
+  }
+
+  // ===== RESIZABLE PANELS =====
+  function makeResizable(handleId, targetId, axis, min, max) {
+    const handle = document.getElementById(handleId);
+    const target = document.getElementById(targetId);
+    if (!handle || !target) return;
+    let dragging = false;
+
+    handle.addEventListener('mousedown', e => {
+      dragging = true;
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      if (axis === 'x') {
+        const rect = target.getBoundingClientRect();
+        let newWidth = e.clientX - rect.left;
+        newWidth = Math.max(min, Math.min(max, newWidth));
+        target.style.width = newWidth + 'px';
+      } else {
+        const rect = target.getBoundingClientRect();
+        let newHeight = rect.bottom - e.clientY;
+        newHeight = Math.max(min, Math.min(max, newHeight));
+        target.style.height = newHeight + 'px';
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (dragging) {
+        dragging = false;
+        document.body.style.userSelect = '';
+      }
+    });
+  }
+
+  makeResizable('sidebar-resize', 'sidebar', 'x', 160, 400);
+  makeResizable('bottom-resize', 'bottom-panel', 'y', 100, window.innerHeight * 0.6);
+
+  // Initialize
+  lockLanguageToSubject();
+  loadTasksFromServer();
+
+</script>
+</body>
+</html>
