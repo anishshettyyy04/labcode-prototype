@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: labcode-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: ohio
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
